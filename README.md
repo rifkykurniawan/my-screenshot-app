@@ -6,6 +6,7 @@ Ekstensi Chrome lokal untuk QA tester: screenshot tampilan layar (viewport tab s
 
 ## Fitur Utama
 - **One-Click Viewport Capture**: Menangkap tampilan layar tab aktif sesuai lebar resolusi layar Anda.
+- **Top URL Bar**: Otomatis menyematkan banner URL halaman dan timestamp di bagian atas screenshot (tanpa menutupi konten asli website). Dilengkapi toggle di toolbar jika ingin mematikan/menyalakan.
 - **Rectangle Annotation**: Menggambar outline kotak untuk menandai bug / UI defect.
 - **QA Color Palette**: Pilihan warna cepat (Merah Crimson bug default, Oranye, Kuning, Hijau, Cyan, Biru, Putih) + Custom Color Picker.
 - **Stroke Width**: 4 pilihan ketebalan garis (2px, 4px, 7px, 11px).

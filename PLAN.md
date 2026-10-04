@@ -5,17 +5,18 @@ Klik ikon/shortcut → screenshot **tampilan layar saat ini** (viewport tab, sel
 
 ## Keputusan
 - Capture: **apa yang tampil di layar** (viewport tab aktif sesuai lebar layar komputer).
+- Header URL: **Otomatis menambahkan bar URL & timestamp** di sisi atas screenshot tanpa menutupi konten web.
 - Tool: **hanya Rectangle** (pilihan warna, ketebalan, undo).
 - Tab editor **ditutup otomatis** setelah berhasil copy ke clipboard.
 
 ## Alur Kerja
 ```mermaid
 flowchart LR
-A["Klik ikon / Shortcut (Alt+Shift+S)"] --> B["background.js: captureVisibleTab (PNG)"]
-B --> C["Simpan dataURL di chrome.storage.session"]
+A["Klik ikon / Shortcut (Alt+Shift+S)"] --> B["background.js: captureVisibleTab (PNG) + simpan tab.url"]
+B --> C["Simpan dataURL & URL di chrome.storage.local"]
 C --> D["Buka tab baru editor.html"]
-D --> E["Tampilkan screenshot & gambar rectangle di canvas"]
-E --> F["Copy to Clipboard (PNG)"]
+D --> E["Tampilkan banner URL di atas + screenshot + gambar rectangle di canvas"]
+E --> F["Copy to Clipboard (PNG dengan URL bar)"]
 F --> G["Tutup tab editor"]
 ```
 
