@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QA Screenshot Editor</title>
+  <link rel="stylesheet" href="editor.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Header / Top Bar -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+      </div>
+      <span class="brand-title">QA Snap Editor</span>
+      <span id="image-dimensions" class="badge-dimension">Loading...</span>
+    </div>
+
+    <!-- Main Toolbar -->
+    <div class="toolbar">
+      <!-- Active Tool Badge -->
+      <div class="tool-indicator" title="Rectangle Tool (Active)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+        </svg>
+        <span>Rectangle</span>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- Color Palette -->
+      <div class="color-palette" title="Select Border Color">
+        <button class="color-btn active" data-color="#ef4444" style="--c: #ef4444;" title="Crimson Red (Default QA)"></button>
+        <button class="color-btn" data-color="#f97316" style="--c: #f97316;" title="Orange"></button>
+        <button class="color-btn" data-color="#eab308" style="--c: #eab308;" title="Yellow"></button>
+        <button class="color-btn" data-color="#22c55e" style="--c: #22c55e;" title="Green"></button>
+        <button class="color-btn" data-color="#06b6d4" style="--c: #06b6d4;" title="Cyan"></button>
+        <button class="color-btn" data-color="#3b82f6" style="--c: #3b82f6;" title="Blue"></button>
+        <button class="color-btn" data-color="#ffffff" style="--c: #ffffff;" title="White"></button>
+        <label class="custom-color-label" title="Custom color picker">
+          <input type="color" id="custom-color-picker" value="#ef4444">
+          <span class="custom-color-preview"></span>
+        </label>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- Stroke Thickness -->
+      <div class="stroke-selector" title="Stroke Thickness">
+        <button class="stroke-btn" data-stroke="2" title="Thin (2px)">
+          <span class="stroke-dot" style="width: 4px; height: 4px;"></span>
+        </button>
+        <button class="stroke-btn active" data-stroke="4" title="Medium (4px)">
+          <span class="stroke-dot" style="width: 7px; height: 7px;"></span>
+        </button>
+        <button class="stroke-btn" data-stroke="7" title="Thick (7px)">
+          <span class="stroke-dot" style="width: 10px; height: 10px;"></span>
+        </button>
+        <button class="stroke-btn" data-stroke="11" title="Bold (11px)">
+          <span class="stroke-dot" style="width: 13px; height: 13px;"></span>
+        </button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- History Actions -->
+      <div class="action-group">
+        <button id="btn-undo" class="btn-icon" title="Undo (Ctrl+Z)" disabled>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+        </button>
+        <button id="btn-redo" class="btn-icon" title="Redo (Ctrl+Y)" disabled>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+        </button>
+        <button id="btn-clear" class="btn-icon" title="Clear all rectangles">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Primary Action: Copy & Auto Close -->
+    <div class="header-actions">
+      <button id="btn-copy" class="btn-primary" title="Copy screenshot and close tab (Ctrl+C or Enter)">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        <span>Copy to Clipboard</span>
+        <kbd class="kbd-hint">Ctrl+C</kbd>
+      </button>
+    </div>
+  </header>
+
+  <!-- Canvas Workspace Area -->
+  <main class="editor-workspace" id="workspace">
+    <div class="canvas-container" id="canvas-container">
+      <canvas id="screenshot-canvas"></canvas>
+    </div>
+  </main>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="toast hidden">
+    <div class="toast-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+      </svg>
+    </div>
+    <div class="toast-content">
+      <span class="toast-title" id="toast-title">Copied to Clipboard!</span>
+      <span class="toast-desc" id="toast-desc">Tab will close automatically...</span>
+    </div>
+  </div>
+
+  <script src="editor.js"></script>
+</body>
+</html>
