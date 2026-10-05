@@ -1,4 +1,4 @@
-# Plan: Chrome Extension Screenshot + Editor (QA, Lokal)
+# Plan: Chrome Extension Screen Snap & Editor (Lokal)
 
 ## Tujuan
 Klik ikon/shortcut → screenshot **tampilan layar saat ini** (viewport tab, selebar layar) → buka tab baru berisi editor → gambar **rectangle** → **Copy to Clipboard** → tab editor **tertutup otomatis**. Tanpa save/download. Dipakai lokal (load unpacked).
@@ -53,7 +53,7 @@ my-screenshot-app/
    - Buka tab baru mengarah ke `editor/editor.html`.
 3. **Editor UI & Canvas (`editor/`)**:
    - `editor.html`: Container toolbar (pilih warna, pilihan ukuran stroke, tombol Undo, tombol Copy to Clipboard) dan canvas.
-   - `editor.css`: UI modern, minimalis, dan nyaman untuk alur kerja QA.
+   - `editor.css`: UI modern, minimalis, dan nyaman digunakan.
    - `editor.js`:
      - Ambil screenshot dari `chrome.storage.session` dan render ke canvas.
      - Implementasi interaksi mouse drag untuk menggambar **Rectangle** (outline).

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "QA Screen Snap & Rectangle Editor",
+  "name": "Screen Snap & Rectangle Editor",
   "version": "1.0.0",
-  "description": "Capture screen viewport instantly, draw rectangles for QA bug reporting, and copy directly to clipboard.",
+  "description": "Capture screen viewport instantly, draw rectangles to highlight content, and copy directly to clipboard.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
