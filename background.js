@@ -1,4 +1,4 @@
-// Background Service Worker for QA Screenshot Extension
+// Background Service Worker for Screen Snap Extension
 
 async function captureAndOpenEditor() {
   try {

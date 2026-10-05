@@ -23,7 +23,7 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 
 1. Clone or download this repository to your local machine:
    ```bash
-   git clone https://github.com/<your-username>/my-screenshot-app.git
+   git clone https://github.com/rifkykurniawan/my-screenshot-app.git
    ```
 2. Open Google Chrome and navigate to the extensions page:
    ```text

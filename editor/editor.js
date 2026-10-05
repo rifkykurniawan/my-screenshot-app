@@ -1,4 +1,4 @@
-// QA Screenshot Editor Logic with Top URL Bar
+// Screen Snap Editor Logic with Top URL Bar
 (() => {
   const canvas = document.getElementById('screenshot-canvas');
   const ctx = canvas.getContext('2d');
@@ -62,7 +62,7 @@
           capturedAt = data.capturedAt || Date.now();
 
           if (sourceTitle) {
-            document.title = `QA Annotate: ${sourceTitle}`;
+            document.title = `Annotate: ${sourceTitle}`;
           }
         }
       } catch (err) {
