@@ -54,12 +54,21 @@
 
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
       try {
-        const data = await chrome.storage.local.get(['latestScreenshot', 'sourceUrl', 'sourceTitle', 'capturedAt']);
+        const data = await chrome.storage.local.get(['latestScreenshot', 'sourceUrl', 'sourceTitle', 'capturedAt', 'captureMode']);
         if (data && data.latestScreenshot) {
           screenshotDataUrl = data.latestScreenshot;
           sourceUrl = data.sourceUrl || '';
           sourceTitle = data.sourceTitle || 'Screenshot';
           capturedAt = data.capturedAt || Date.now();
+
+          // If captured with window mode (which already includes browser URL & tabs & DevTools),
+          // turn off the top URL banner by default to avoid redundancy
+          if (data.captureMode === 'window') {
+            showUrlBar = false;
+            if (toggleUrlBar) {
+              toggleUrlBar.checked = false;
+            }
+          }
 
           if (sourceTitle) {
             document.title = `Annotate: ${sourceTitle}`;
