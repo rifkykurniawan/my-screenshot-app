@@ -1,41 +1,9 @@
 // Capture helper: Invokes getDisplayMedia to grab 1 frame of the selected window
 (async () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const delaySec = parseInt(urlParams.get('delay') || '2', 10);
-
-  const countdownText = document.getElementById('countdown-text');
-  const statusTitle = document.getElementById('status-title');
-  const countdownIndicator = document.getElementById('countdown-indicator');
-  const loadingSpinner = document.getElementById('loading-spinner');
-
-  // Retrieve stored active target tab info
+  let stream = null;
   const stored = await chrome.storage.local.get(['pendingCaptureTarget']);
   const targetTab = stored.pendingCaptureTarget || {};
 
-  // If user requested a delay, run a countdown while keeping original tab/window focused
-  if (delaySec > 0) {
-    for (let remaining = delaySec; remaining > 0; remaining--) {
-      if (countdownText) {
-        countdownText.textContent = `Prompt opens in ${remaining}s...`;
-      }
-      // Re-focus user's working window/tab
-      if (targetTab.originalWindowId) {
-        chrome.windows.update(targetTab.originalWindowId, { focused: true }).catch(() => {});
-      }
-      if (targetTab.originalTabId) {
-        chrome.tabs.update(targetTab.originalTabId, { active: true }).catch(() => {});
-      }
-      await new Promise((r) => setTimeout(r, 1000));
-    }
-  }
-
-  // Update UI for permission prompt
-  if (countdownIndicator) countdownIndicator.style.display = 'none';
-  if (loadingSpinner) loadingSpinner.style.display = 'block';
-  if (statusTitle) statusTitle.textContent = 'Select Chrome Window';
-  if (countdownText) countdownText.textContent = 'Choose Window in prompt';
-
-  let stream = null;
   try {
     const displayMediaOptions = {
       video: {
@@ -55,12 +23,7 @@
       throw new Error('No video track available from stream.');
     }
 
-    // Immediately focus back to the target window so capture is clean
-    if (targetTab.originalWindowId) {
-      await chrome.windows.update(targetTab.originalWindowId, { focused: true }).catch(() => {});
-    }
-
-    // Wait 350ms to allow picker modal to disappear and window to re-render
+    // Wait a brief moment to allow prompt overlay to close and window to settle
     await new Promise((resolve) => setTimeout(resolve, 350));
 
     let dataUrl = null;
@@ -123,22 +86,23 @@
       captureMode: 'window'
     });
 
-    // Open editor in a normal tab inside user's window
+    // Open editor in a new tab inside user's main window
     const editorUrl = chrome.runtime.getURL('editor/editor.html');
     if (targetTab.originalWindowId) {
       await chrome.tabs.create({ windowId: targetTab.originalWindowId, url: editorUrl });
+      await chrome.windows.update(targetTab.originalWindowId, { focused: true }).catch(() => {});
     } else {
       await chrome.tabs.create({ url: editorUrl });
     }
 
-    // Close this temporary capture window
+    // Close this separate popup window
     window.close();
   } catch (error) {
     console.warn('Window capture cancelled or failed:', error);
     if (stream) {
       stream.getTracks().forEach((track) => track.stop());
     }
-    // Close capture window if cancelled or error
+    // Close separate popup window on cancel or error
     window.close();
   }
 })();

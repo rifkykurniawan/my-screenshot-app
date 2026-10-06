@@ -15,6 +15,7 @@ body {
 
 .popup-container {
   display: flex;
+  flex-direction: border-box;
   flex-direction: column;
   padding: 14px;
   gap: 12px;
@@ -49,44 +50,6 @@ body {
   color: #38bdf8;
   padding: 2px 6px;
   border-radius: 4px;
-}
-
-.countdown-banner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  border-radius: 6px;
-  padding: 8px;
-  font-size: 12px;
-  color: #38bdf8;
-  font-weight: 500;
-  animation: fadeIn 0.15s ease-out;
-}
-
-.countdown-banner.hidden {
-  display: none;
-}
-
-.countdown-pulse {
-  width: 8px;
-  height: 8px;
-  background: #38bdf8;
-  border-radius: 50%;
-  box-shadow: 0 0 8px #38bdf8;
-  animation: pulse 1s infinite alternate;
-}
-
-@keyframes pulse {
-  from { opacity: 0.4; transform: scale(0.8); }
-  to { opacity: 1; transform: scale(1.2); }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 .modes-list {
@@ -180,43 +143,6 @@ body {
 .mode-card:hover .shortcut-tag {
   color: #94a3b8;
   border-color: rgba(255, 255, 255, 0.15);
-}
-
-.options-container {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 6px;
-  padding: 8px 10px;
-}
-
-.option-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.option-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11.5px;
-  color: #94a3b8;
-}
-
-.delay-select {
-  background: #1e293b;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 4px;
-  color: #f1f5f9;
-  font-size: 11px;
-  padding: 4px 6px;
-  outline: none;
-  cursor: pointer;
-}
-
-.delay-select:focus {
-  border-color: #38bdf8;
 }
 
 .popup-footer {

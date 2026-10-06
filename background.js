@@ -41,10 +41,9 @@ async function captureNormalViewport() {
 }
 
 // Window Capture (Includes DevTools)
-// Opens helper as a minimized/unfocused popup window, keeps user on their working tab
-async function captureWindowWithDevTools(delaySeconds = 2) {
+// Opens helper as a separate popup window so your main tab stays open and visible
+async function captureWindowWithDevTools() {
   try {
-    // 1. Identify the current active tab and window
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const originalTabId = activeTab ? activeTab.id : null;
     const originalWindowId = activeTab ? activeTab.windowId : null;
@@ -60,35 +59,19 @@ async function captureWindowWithDevTools(delaySeconds = 2) {
       });
     }
 
-    // 2. Open capture helper page as a popup window off to the side, without stealing focus
-    const captureUrl = chrome.runtime.getURL(`capture/capture.html?delay=${delaySeconds}`);
-    const popupWindow = await chrome.windows.create({
+    // Open helper in a separate popup window
+    const captureUrl = chrome.runtime.getURL("capture/capture.html");
+    await chrome.windows.create({
       url: captureUrl,
       type: "popup",
-      focused: false,
-      width: 420,
-      height: 380,
-      left: 100,
-      top: 100
+      focused: true,
+      width: 480,
+      height: 420,
+      left: 150,
+      top: 150
     });
-
-    // 3. Ensure the original tab and window stay focused so user is looking at their page
-    if (originalWindowId) {
-      try {
-        await chrome.windows.update(originalWindowId, { focused: true });
-      } catch (e) {
-        // ignore window focus error
-      }
-    }
-    if (originalTabId) {
-      try {
-        await chrome.tabs.update(originalTabId, { active: true });
-      } catch (e) {
-        // ignore tab focus error
-      }
-    }
   } catch (error) {
-    console.error("Error launching window capture helper:", error);
+    console.error("Error launching window capture popup:", error);
   }
 }
 
@@ -98,20 +81,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     captureNormalViewport();
     sendResponse({ status: "started" });
   } else if (message && message.action === "capture-devtools") {
-    const delay = typeof message.delaySeconds !== "undefined" ? message.delaySeconds : 2;
-    captureWindowWithDevTools(delay);
+    captureWindowWithDevTools();
     sendResponse({ status: "started" });
   }
   return true;
 });
 
 // Triggered via keyboard shortcuts
-chrome.commands.onCommand.addListener(async (command) => {
+chrome.commands.onCommand.addListener((command) => {
   if (command === "take-screenshot") {
     captureNormalViewport();
   } else if (command === "take-window-screenshot") {
-    const stored = await chrome.storage.local.get(["captureDelaySeconds"]);
-    const delay = typeof stored.captureDelaySeconds !== "undefined" ? stored.captureDelaySeconds : 2;
-    captureWindowWithDevTools(delay);
+    captureWindowWithDevTools();
   }
 });
