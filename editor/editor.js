@@ -8,6 +8,7 @@
   const toastDesc = document.getElementById('toast-desc');
 
   // Toolbar Elements
+  const toolBtns = document.querySelectorAll('.tool-btn');
   const colorBtns = document.querySelectorAll('.color-btn');
   const customColorPicker = document.getElementById('custom-color-picker');
   const strokeBtns = document.querySelectorAll('.stroke-btn');
@@ -18,6 +19,7 @@
   const btnCopy = document.getElementById('btn-copy');
 
   // Drawing & State
+  let currentTool = 'rectangle'; // 'rectangle' | 'arrow'
   let currentColor = '#ef4444'; // Crimson Red default
   let currentStroke = 4;        // 4px default
   let showUrlBar = true;
@@ -33,12 +35,12 @@
 
   // Shape-based History (preserves quality and enables seamless URL bar toggling)
   const MAX_HISTORY = 40;
-  let rectangles = []; // Array of { x, y, w, h, color, stroke } relative to image
-  let undoStack = [[]]; // Stack of rectangles array snapshots
+  let shapes = []; // Array of shape objects ({ type: 'rectangle', ... } or { type: 'arrow', ... })
+  let undoStack = [[]]; // Stack of shapes array snapshots
   let redoStack = [];
 
   // Live drag preview state
-  let dragPreviewRect = null;
+  let dragPreviewShape = null;
 
   // Initialize
   init();
@@ -138,7 +140,7 @@
 
     tctx.font = '16px system-ui, sans-serif';
     tctx.fillStyle = '#94a3b8';
-    tctx.fillText('Notice the URL bar above! Drag to draw rectangles, then Copy to Clipboard.', testCanvas.width / 2, testCanvas.height / 2 + 20);
+    tctx.fillText('Notice the URL bar above! Draw rectangles or arrows, then Copy to Clipboard.', testCanvas.width / 2, testCanvas.height / 2 + 20);
 
     baseImage = testCanvas;
     render();
@@ -151,7 +153,7 @@
     return Math.max(40, Math.round(imgWidth * 0.025));
   }
 
-  // Main Render Function: redraws banner, image, and all rectangles
+  // Main Render Function: redraws banner, image, and all shapes
   function render() {
     if (!baseImage) return;
 
@@ -173,21 +175,14 @@
     // 2. Draw Screenshot Image below the banner
     ctx.drawImage(baseImage, 0, bannerHeight, imgWidth, imgHeight);
 
-    // 3. Draw Committed Rectangles
-    for (const r of rectangles) {
-      drawRectangle(r.x, r.y + bannerHeight, r.w, r.h, r.color, r.stroke);
+    // 3. Draw Committed Shapes
+    for (const shape of shapes) {
+      drawShape(shape, bannerHeight);
     }
 
-    // 4. Draw Live Dragging Preview Rectangle
-    if (dragPreviewRect) {
-      drawRectangle(
-        dragPreviewRect.x,
-        dragPreviewRect.y + bannerHeight,
-        dragPreviewRect.w,
-        dragPreviewRect.h,
-        dragPreviewRect.color,
-        dragPreviewRect.stroke
-      );
+    // 4. Draw Live Dragging Preview Shape
+    if (dragPreviewShape) {
+      drawShape(dragPreviewShape, bannerHeight);
     }
 
     // Update Dimensions Badge
@@ -316,6 +311,16 @@
     ctx.closePath();
   }
 
+  // Dispatcher for drawing any shape
+  function drawShape(shape, bannerOffset = 0) {
+    if (!shape) return;
+    if (shape.type === 'rectangle') {
+      drawRectangle(shape.x, shape.y + bannerOffset, shape.w, shape.h, shape.color, shape.stroke);
+    } else if (shape.type === 'arrow') {
+      drawArrow(shape.x1, shape.y1 + bannerOffset, shape.x2, shape.y2 + bannerOffset, shape.color, shape.stroke);
+    }
+  }
+
   // Helper: Draw single rectangle
   function drawRectangle(x, y, w, h, color, stroke) {
     ctx.save();
@@ -323,6 +328,46 @@
     ctx.lineWidth = stroke;
     ctx.lineJoin = 'miter';
     ctx.strokeRect(x, y, w, h);
+    ctx.restore();
+  }
+
+  // Helper: Draw clean arrow with chevron wings (matching requested design)
+  function drawArrow(x1, y1, x2, y2, color, stroke) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const length = Math.hypot(dx, dy);
+    if (length < 2) return;
+
+    const angle = Math.atan2(dy, dx);
+    const headLength = Math.max(14, Math.min(stroke * 3.6, length * 0.45));
+    const arrowAngle = 0.52; // ~30 degrees
+
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = stroke;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Main shaft line
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    // Arrowhead chevron wings
+    ctx.beginPath();
+    ctx.moveTo(
+      x2 - headLength * Math.cos(angle - arrowAngle),
+      y2 - headLength * Math.sin(angle - arrowAngle)
+    );
+    ctx.lineTo(x2, y2);
+    ctx.lineTo(
+      x2 - headLength * Math.cos(angle + arrowAngle),
+      y2 - headLength * Math.sin(angle + arrowAngle)
+    );
+    ctx.stroke();
+
     ctx.restore();
   }
 
@@ -342,6 +387,13 @@
     canvas.addEventListener('mousedown', onMouseDown);
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
+
+    // Tool selector buttons
+    toolBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        setTool(btn.dataset.tool);
+      });
+    });
 
     // Color buttons
     colorBtns.forEach(btn => {
@@ -385,6 +437,14 @@
     window.addEventListener('keydown', onKeyDown);
   }
 
+  function setTool(tool) {
+    if (tool !== 'rectangle' && tool !== 'arrow') return;
+    currentTool = tool;
+    toolBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tool === tool);
+    });
+  }
+
   function onMouseDown(e) {
     if (e.button !== 0) return; // Left mouse click only
 
@@ -405,21 +465,37 @@
     const currentX = coords.x;
     const currentY = coords.y - bannerHeight;
 
-    const rx = Math.min(startX, currentX);
-    const ry = Math.min(startY, currentY);
-    const rw = Math.abs(currentX - startX);
-    const rh = Math.abs(currentY - startY);
+    if (currentTool === 'rectangle') {
+      const rx = Math.min(startX, currentX);
+      const ry = Math.min(startY, currentY);
+      const rw = Math.abs(currentX - startX);
+      const rh = Math.abs(currentY - startY);
 
-    if (rw === 0 || rh === 0) return;
+      if (rw === 0 || rh === 0) return;
 
-    dragPreviewRect = {
-      x: rx,
-      y: ry,
-      w: rw,
-      h: rh,
-      color: currentColor,
-      stroke: currentStroke
-    };
+      dragPreviewShape = {
+        type: 'rectangle',
+        x: rx,
+        y: ry,
+        w: rw,
+        h: rh,
+        color: currentColor,
+        stroke: currentStroke
+      };
+    } else if (currentTool === 'arrow') {
+      const dist = Math.hypot(currentX - startX, currentY - startY);
+      if (dist < 2) return;
+
+      dragPreviewShape = {
+        type: 'arrow',
+        x1: startX,
+        y1: startY,
+        x2: currentX,
+        y2: currentY,
+        color: currentColor,
+        stroke: currentStroke
+      };
+    }
 
     render();
   }
@@ -428,18 +504,30 @@
     if (!isDrawing) return;
     isDrawing = false;
 
-    if (dragPreviewRect && dragPreviewRect.w > 3 && dragPreviewRect.h > 3) {
-      rectangles.push({ ...dragPreviewRect });
-      commitHistory();
+    if (dragPreviewShape) {
+      let isValid = false;
+      if (dragPreviewShape.type === 'rectangle' && dragPreviewShape.w > 3 && dragPreviewShape.h > 3) {
+        isValid = true;
+      } else if (dragPreviewShape.type === 'arrow') {
+        const length = Math.hypot(dragPreviewShape.x2 - dragPreviewShape.x1, dragPreviewShape.y2 - dragPreviewShape.y1);
+        if (length > 5) {
+          isValid = true;
+        }
+      }
+
+      if (isValid) {
+        shapes.push({ ...dragPreviewShape });
+        commitHistory();
+      }
     }
 
-    dragPreviewRect = null;
+    dragPreviewShape = null;
     render();
   }
 
   // History Management
   function commitHistory() {
-    undoStack.push([...rectangles]);
+    undoStack.push([...shapes]);
     if (undoStack.length > MAX_HISTORY) {
       undoStack.shift();
     }
@@ -453,7 +541,7 @@
     const current = undoStack.pop();
     redoStack.push(current);
 
-    rectangles = [...undoStack[undoStack.length - 1]];
+    shapes = [...undoStack[undoStack.length - 1]];
     render();
     updateHistoryButtons();
   }
@@ -464,15 +552,15 @@
     const next = redoStack.pop();
     undoStack.push(next);
 
-    rectangles = [...next];
+    shapes = [...next];
     render();
     updateHistoryButtons();
   }
 
   function clearAll() {
-    if (rectangles.length === 0) return;
+    if (shapes.length === 0) return;
 
-    rectangles = [];
+    shapes = [];
     commitHistory();
     render();
   }
@@ -485,6 +573,17 @@
   // Keyboard Shortcuts Handler
   function onKeyDown(e) {
     const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+
+    // Tool shortcuts: R for Rectangle, A for Arrow (when not modifier held)
+    if (!isCtrlOrMeta && !e.altKey && !e.shiftKey) {
+      if (e.key.toLowerCase() === 'r') {
+        setTool('rectangle');
+        return;
+      } else if (e.key.toLowerCase() === 'a') {
+        setTool('arrow');
+        return;
+      }
+    }
 
     // Ctrl+Z: Undo
     if (isCtrlOrMeta && !e.shiftKey && e.key.toLowerCase() === 'z') {
@@ -510,7 +609,7 @@
     // Escape: Cancel current drawing drag
     if (e.key === 'Escape' && isDrawing) {
       isDrawing = false;
-      dragPreviewRect = null;
+      dragPreviewShape = null;
       render();
     }
   }

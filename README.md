@@ -11,7 +11,9 @@ A lightweight, productivity-focused Chrome extension for capturing and annotatin
   - **Include DevTools**: Full Chrome window capture including inspect element / DevTools panel and browser bar (`Alt+Shift+W`).
 - **DevTools / Inspect Element Capture**: Captures the complete browser window with docked developer tools (Console, Network, Elements, etc.) without cropping.
 - **Top URL & Timestamp Header**: Automatically appends a clean browser-style top banner containing the source page URL and capture timestamp (YYYY-MM-DD HH:MM:SS) for viewport captures. Includes an on/off toggle in the toolbar.
-- **Content Highlighting (Rectangle Tool)**: Draw outline rectangles smoothly in any direction to highlight key areas, text, or elements.
+- **Annotation Tools (Rectangle & Arrow)**: 
+  - **Rectangle Tool (`R`)**: Draw outline rectangles smoothly to highlight key areas, text, or elements.
+  - **Arrow Tool (`A`)**: Draw directional arrows with crisp chevrons to point directly to issues or buttons.
 - **Curated Color Palette**: Pre-configured high-contrast colors (Crimson Red, Orange, Yellow, Green, Cyan, Blue, White) plus a native custom color picker.
 - **Adjustable Stroke Thickness**: Choose from 4 line weights (Thin: 2px, Medium: 4px, Thick: 7px, Bold: 11px).
 - **History & Undo/Redo**: Full undo (`Ctrl+Z`) and redo (`Ctrl+Y` / `Ctrl+Shift+Z`) support with state preservation when toggling the URL header.
@@ -48,7 +50,7 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 3. Select your desired capture mode:
    - **Normal Viewport**: Instantly captures the visible page area and opens the editor.
    - **Include DevTools**: A screen-picker prompt will appear. Under the **"Window"** tab, select your Chrome window and click **Share**.
-4. Draw rectangles to highlight elements.
+4. Draw rectangles or arrows to highlight elements or point out details.
 5. Click **"Copy to Clipboard"** (or press `Ctrl + C` / `Enter`).
 6. Paste (`Ctrl + V` / `Cmd + V`) directly into Slack, Teams, Notion, Google Docs, GitHub, etc.
 
@@ -64,10 +66,12 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 | :--- | :--- |
 | `Alt + Shift + S` *(Option+Shift+S on Mac)* | Capture active viewport & open editor |
 | `Alt + Shift + W` *(Option+Shift+W on Mac)* | Capture window with DevTools & open editor |
+| `R` | Select Rectangle tool |
+| `A` | Select Arrow tool |
 | `Ctrl + C` or `Enter` *(Cmd+C on Mac)* | Copy screenshot to clipboard & auto-close tab |
-| `Ctrl + Z` *(Cmd+Z on Mac)* | Undo last rectangle |
-| `Ctrl + Y` or `Ctrl + Shift + Z` | Redo rectangle |
-| `Escape` | Cancel current drag rectangle |
+| `Ctrl + Z` *(Cmd+Z on Mac)* | Undo last annotation |
+| `Ctrl + Y` or `Ctrl + Shift + Z` | Redo annotation |
+| `Escape` | Cancel current drawing drag |
 
 > **Note**: You can customize extension keyboard shortcuts anytime by visiting `chrome://extensions/shortcuts` in your browser.
 

@@ -26,12 +26,21 @@
 
     <!-- Main Toolbar -->
     <div class="toolbar">
-      <!-- Active Tool Badge -->
-      <div class="tool-indicator" title="Rectangle Tool (Active)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-        </svg>
-        <span>Rectangle</span>
+      <!-- Tool Selector -->
+      <div class="tool-selector" role="radiogroup" aria-label="Annotation Tool">
+        <button class="tool-btn active" data-tool="rectangle" title="Rectangle Tool (R)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+          </svg>
+          <span>Rectangle</span>
+        </button>
+        <button class="tool-btn" data-tool="arrow" title="Arrow Tool (A)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="19" x2="19" y2="5"></line>
+            <polyline points="10 5 19 5 19 14"></polyline>
+          </svg>
+          <span>Arrow</span>
+        </button>
       </div>
 
       <div class="toolbar-divider"></div>
@@ -94,7 +103,7 @@
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
           </svg>
         </button>
-        <button id="btn-clear" class="btn-icon" title="Clear all rectangles">
+        <button id="btn-clear" class="btn-icon" title="Clear all annotations">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
