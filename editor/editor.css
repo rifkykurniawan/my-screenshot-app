@@ -397,6 +397,29 @@ body {
   cursor: crosshair;
 }
 
+#screenshot-canvas.tool-text {
+  cursor: text;
+}
+
+/* Inline Text Annotation Input */
+.canvas-text-editor {
+  position: absolute;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1.5px dashed #38bdf8;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-family: var(--font-family);
+  font-weight: 700;
+  line-height: 1.25;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+  z-index: 20;
+  white-space: pre;
+  box-sizing: border-box;
+}
+
 /* Toast Notification */
 .toast {
   position: fixed;

@@ -1,6 +1,7 @@
 // Screen Snap Editor Logic with Top URL Bar
 (() => {
   const canvas = document.getElementById('screenshot-canvas');
+  const canvasContainer = document.getElementById('canvas-container');
   const ctx = canvas.getContext('2d');
   const dimensionsBadge = document.getElementById('image-dimensions');
   const toast = document.getElementById('toast');
@@ -19,13 +20,14 @@
   const btnCopy = document.getElementById('btn-copy');
 
   // Drawing & State
-  let currentTool = 'rectangle'; // 'rectangle' | 'arrow'
+  let currentTool = 'rectangle'; // 'rectangle' | 'arrow' | 'text'
   let currentColor = '#ef4444'; // Crimson Red default
   let currentStroke = 4;        // 4px default
   let showUrlBar = true;
   let isDrawing = false;
   let startX = 0;
   let startY = 0;
+  let activeTextInput = null;
 
   // Metadata
   let sourceUrl = '';
@@ -140,7 +142,7 @@
 
     tctx.font = '16px system-ui, sans-serif';
     tctx.fillStyle = '#94a3b8';
-    tctx.fillText('Notice the URL bar above! Draw rectangles or arrows, then Copy to Clipboard.', testCanvas.width / 2, testCanvas.height / 2 + 20);
+    tctx.fillText('Notice the URL bar above! Draw rectangles, arrows, or text, then Copy to Clipboard.', testCanvas.width / 2, testCanvas.height / 2 + 20);
 
     baseImage = testCanvas;
     render();
@@ -318,6 +320,42 @@
       drawRectangle(shape.x, shape.y + bannerOffset, shape.w, shape.h, shape.color, shape.stroke);
     } else if (shape.type === 'arrow') {
       drawArrow(shape.x1, shape.y1 + bannerOffset, shape.x2, shape.y2 + bannerOffset, shape.color, shape.stroke);
+    } else if (shape.type === 'text') {
+      drawText(shape.text, shape.x, shape.y + bannerOffset, shape.color, shape.fontSize);
+    }
+  }
+
+  // Helper: Draw high-legibility bold text annotation
+  function drawText(text, x, y, color, fontSize) {
+    ctx.save();
+    ctx.font = `700 ${fontSize}px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif`;
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'left';
+
+    // Drop shadow for legibility over both dark and light backgrounds
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+    ctx.shadowBlur = Math.max(3, Math.round(fontSize * 0.12));
+    ctx.shadowOffsetX = Math.max(1, Math.round(fontSize * 0.04));
+    ctx.shadowOffsetY = Math.max(1, Math.round(fontSize * 0.04));
+
+    ctx.fillStyle = color;
+
+    const lines = text.split('\n');
+    const lineHeight = fontSize * 1.25;
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i], x, y + (i * lineHeight));
+    }
+
+    ctx.restore();
+  }
+
+  function getBaseFontSize(stroke) {
+    switch (stroke) {
+      case 2: return 16;
+      case 4: return 22;
+      case 7: return 32;
+      case 11: return 44;
+      default: return 22;
     }
   }
 
@@ -401,6 +439,10 @@
         colorBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentColor = btn.dataset.color;
+        if (activeTextInput) {
+          activeTextInput.color = currentColor;
+          activeTextInput.textarea.style.color = currentColor;
+        }
       });
     });
 
@@ -408,6 +450,10 @@
     customColorPicker.addEventListener('input', (e) => {
       colorBtns.forEach(b => b.classList.remove('active'));
       currentColor = e.target.value;
+      if (activeTextInput) {
+        activeTextInput.color = currentColor;
+        activeTextInput.textarea.style.color = currentColor;
+      }
     });
 
     // Stroke buttons
@@ -416,6 +462,10 @@
         strokeBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentStroke = parseInt(btn.dataset.stroke, 10);
+        if (activeTextInput) {
+          activeTextInput.baseFontSize = getBaseFontSize(currentStroke);
+          activeTextInput.textarea.style.fontSize = `${activeTextInput.baseFontSize}px`;
+        }
       });
     });
 
@@ -438,15 +488,138 @@
   }
 
   function setTool(tool) {
-    if (tool !== 'rectangle' && tool !== 'arrow') return;
+    if (tool !== 'rectangle' && tool !== 'arrow' && tool !== 'text') return;
+    if (activeTextInput && tool !== 'text') {
+      commitActiveText();
+    }
     currentTool = tool;
     toolBtns.forEach(btn => {
       btn.classList.toggle('active', btn.dataset.tool === tool);
     });
+    canvas.classList.toggle('tool-text', tool === 'text');
+  }
+
+  // Active Text Annotation Operations
+  function commitActiveText() {
+    if (!activeTextInput) return;
+    const data = activeTextInput;
+    activeTextInput = null;
+
+    const text = data.textarea.value.trim();
+    if (data.textarea.parentNode) {
+      data.textarea.remove();
+    }
+
+    if (text.length > 0) {
+      const canvasFontSize = Math.max(12, Math.round(data.baseFontSize * data.scaleX));
+      shapes.push({
+        type: 'text',
+        text,
+        x: data.canvasX,
+        y: data.canvasY,
+        color: data.color,
+        fontSize: canvasFontSize
+      });
+      commitHistory();
+      render();
+    }
+  }
+
+  function cancelActiveText() {
+    if (!activeTextInput) return;
+    const data = activeTextInput;
+    activeTextInput = null;
+    if (data.textarea.parentNode) {
+      data.textarea.remove();
+    }
+  }
+
+  function spawnTextInput(clientX, clientY) {
+    commitActiveText(); // Commit any existing open text input first
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const bannerHeight = getBannerHeight();
+
+    const containerX = clientX - rect.left;
+    const containerY = clientY - rect.top;
+
+    const baseFontSize = getBaseFontSize(currentStroke);
+    const textarea = document.createElement('textarea');
+    textarea.className = 'canvas-text-editor';
+    textarea.placeholder = 'Type text...';
+    textarea.rows = 1;
+
+    // Position textarea so that top-left text aligns with clicked position
+    textarea.style.left = `${Math.max(0, containerX)}px`;
+    textarea.style.top = `${Math.max(0, containerY)}px`;
+    textarea.style.fontSize = `${baseFontSize}px`;
+    textarea.style.color = currentColor;
+    textarea.style.minWidth = '130px';
+
+    // Canvas coordinate where the text starts
+    const canvasX = (containerX + 8) * scaleX;
+    const canvasY = (containerY + 4) * scaleY - bannerHeight;
+
+    activeTextInput = {
+      textarea,
+      containerX,
+      containerY,
+      canvasX,
+      canvasY,
+      baseFontSize,
+      scaleX,
+      scaleY,
+      color: currentColor
+    };
+
+    const adjustSize = () => {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+      textarea.style.width = 'auto';
+      textarea.style.width = `${Math.max(130, textarea.scrollWidth + 14)}px`;
+    };
+
+    textarea.addEventListener('input', adjustSize);
+
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        commitActiveText();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelActiveText();
+      }
+    });
+
+    textarea.addEventListener('blur', () => {
+      setTimeout(() => {
+        commitActiveText();
+      }, 120);
+    });
+
+    canvasContainer.appendChild(textarea);
+    adjustSize();
+    textarea.focus();
   }
 
   function onMouseDown(e) {
     if (e.button !== 0) return; // Left mouse click only
+
+    // If clicking on active text editor itself, allow native typing & selection
+    if (e.target && e.target.classList.contains('canvas-text-editor')) {
+      return;
+    }
+
+    if (currentTool === 'text') {
+      spawnTextInput(e.clientX, e.clientY);
+      return;
+    }
+
+    if (activeTextInput) {
+      commitActiveText();
+    }
 
     const coords = getCanvasCoordinates(e);
     const bannerHeight = getBannerHeight();
@@ -536,6 +709,7 @@
   }
 
   function undo() {
+    commitActiveText();
     if (undoStack.length <= 1) return;
 
     const current = undoStack.pop();
@@ -547,6 +721,7 @@
   }
 
   function redo() {
+    commitActiveText();
     if (redoStack.length === 0) return;
 
     const next = redoStack.pop();
@@ -558,6 +733,7 @@
   }
 
   function clearAll() {
+    commitActiveText();
     if (shapes.length === 0) return;
 
     shapes = [];
@@ -572,15 +748,23 @@
 
   // Keyboard Shortcuts Handler
   function onKeyDown(e) {
+    // If typing inside an input or textarea, do not intercept keystrokes
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+      return;
+    }
+
     const isCtrlOrMeta = e.ctrlKey || e.metaKey;
 
-    // Tool shortcuts: R for Rectangle, A for Arrow (when not modifier held)
+    // Tool shortcuts: R for Rectangle, A for Arrow, T for Text (when no modifier is held)
     if (!isCtrlOrMeta && !e.altKey && !e.shiftKey) {
       if (e.key.toLowerCase() === 'r') {
         setTool('rectangle');
         return;
       } else if (e.key.toLowerCase() === 'a') {
         setTool('arrow');
+        return;
+      } else if (e.key.toLowerCase() === 't') {
+        setTool('text');
         return;
       }
     }
@@ -616,6 +800,7 @@
 
   // Copy to Clipboard and Auto-Close
   async function copyToClipboard() {
+    commitActiveText();
     btnCopy.disabled = true;
     btnCopy.innerHTML = `
       <svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
