@@ -1,13 +1,16 @@
 # Screen Snap & Rectangle Editor
 
-A lightweight, productivity-focused Chrome extension for capturing and annotating screenshots. Capture the current tab viewport with one click or keyboard shortcut, automatically prepend the page URL and timestamp, highlight content with crisp rectangles, and instantly copy the final image to the clipboard. The editor tab closes automatically so you can paste directly into chats, emails, documents, or task managers without saving files locally.
+A lightweight, productivity-focused Chrome extension for capturing and annotating screenshots. Capture either the current viewport or the full Chrome window (including docked DevTools / Inspect Element), highlight content with crisp rectangles, and instantly copy the final image to the clipboard. The editor tab closes automatically so you can paste directly into chats, emails, documents, or task managers without saving files locally.
 
 ---
 
 ## Key Features
 
-- **Instant Viewport Capture**: Takes a high-resolution screenshot of the active tab's visible area using `chrome.tabs.captureVisibleTab`.
-- **Top URL & Timestamp Header**: Automatically appends a clean browser-style top banner containing the source page URL and capture timestamp (YYYY-MM-DD HH:MM:SS) without obscuring any webpage content or navigation bar. Includes an on/off toggle in the toolbar.
+- **Icon Popup Menu**: Quick access popup menu offering 2 capture modes:
+  - **Normal Viewport**: Instant screenshot of active tab webpage area (`Alt+Shift+S`).
+  - **Include DevTools**: Full Chrome window capture including inspect element / DevTools panel and browser bar (`Alt+Shift+W`).
+- **DevTools / Inspect Element Capture**: Captures the complete browser window with docked developer tools (Console, Network, Elements, etc.) without cropping.
+- **Top URL & Timestamp Header**: Automatically appends a clean browser-style top banner containing the source page URL and capture timestamp (YYYY-MM-DD HH:MM:SS) for viewport captures. Includes an on/off toggle in the toolbar.
 - **Content Highlighting (Rectangle Tool)**: Draw outline rectangles smoothly in any direction to highlight key areas, text, or elements.
 - **Curated Color Palette**: Pre-configured high-contrast colors (Crimson Red, Orange, Yellow, Green, Cyan, Blue, White) plus a native custom color picker.
 - **Adjustable Stroke Thickness**: Choose from 4 line weights (Thin: 2px, Medium: 4px, Thick: 7px, Bold: 11px).
@@ -30,7 +33,7 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
    chrome://extensions
    ```
 3. In the top right corner, enable **Developer mode**.
-4. In the top left corner, click **Load unpacked**.
+4. In the top left corner, click **Load unpacked** (or click the refresh icon if you have already loaded it).
 5. Select the project root folder (the folder containing `manifest.json`).
 6. The extension is now installed and ready to use!
 7. *(Recommended)*: Click the puzzle piece icon (Extensions) in the Chrome toolbar and pin 📌 the extension for quick access.
@@ -39,15 +42,19 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 
 ## How to Use
 
-1. Open any webpage or web application.
-2. Click the extension icon in the toolbar, or press the shortcut:
-   - **Windows / Linux**: `Alt + Shift + S`
-   - **macOS**: `Option + Shift + S`
-3. A new tab opens instantly with your captured screen and top URL header.
-4. Click and drag your mouse across the image to draw rectangles and highlight key areas.
+### Method 1: Using the Extension Icon Menu
+1. Open any webpage or web application (and open DevTools with `F12` or `Ctrl+Shift+I` if desired).
+2. Click the **Screen Snap** icon in your browser toolbar.
+3. Select your desired capture mode:
+   - **Normal Viewport**: Instantly captures the visible page area and opens the editor.
+   - **Include DevTools**: A screen-picker prompt will appear. Under the **"Window"** tab, select your Chrome window and click **Share**.
+4. Draw rectangles to highlight elements.
 5. Click **"Copy to Clipboard"** (or press `Ctrl + C` / `Enter`).
-6. A "Copied!" notification appears and the editor tab automatically closes.
-7. Paste (`Ctrl + V` / `Cmd + V`) directly into your desired application (Slack, Teams, Notion, Google Docs, GitHub, etc.).
+6. Paste (`Ctrl + V` / `Cmd + V`) directly into Slack, Teams, Notion, Google Docs, GitHub, etc.
+
+### Method 2: Using Keyboard Shortcuts
+- Press `Alt + Shift + S` anytime for **Normal Viewport** capture.
+- Press `Alt + Shift + W` anytime for **Include DevTools / Window** capture.
 
 ---
 
@@ -55,7 +62,8 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 
 | Shortcut | Action |
 | :--- | :--- |
-| `Alt + Shift + S` *(Option+Shift+S on Mac)* | Capture active tab & open editor |
+| `Alt + Shift + S` *(Option+Shift+S on Mac)* | Capture active viewport & open editor |
+| `Alt + Shift + W` *(Option+Shift+W on Mac)* | Capture window with DevTools & open editor |
 | `Ctrl + C` or `Enter` *(Cmd+C on Mac)* | Copy screenshot to clipboard & auto-close tab |
 | `Ctrl + Z` *(Cmd+Z on Mac)* | Undo last rectangle |
 | `Ctrl + Y` or `Ctrl + Shift + Z` | Redo rectangle |
@@ -71,6 +79,13 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 my-screenshot-app/
 ├── manifest.json            # Chrome Manifest V3 configuration & permissions
 ├── background.js            # Service worker handling capture & tab orchestration
+├── popup/                   # Extension toolbar menu popup
+│   ├── popup.html           # Popup markup with 2 capture mode options
+│   ├── popup.css            # Dark mode styling for popup menu
+│   └── popup.js             # Mode selection event dispatcher
+├── capture/                 # Window capture helper
+│   ├── capture.html         # Capture helper page
+│   └── capture.js           # getDisplayMedia frame grabber
 ├── icons/                   # Extension icons (16px, 48px, 128px)
 │   ├── icon16.png
 │   ├── icon48.png
@@ -79,7 +94,6 @@ my-screenshot-app/
 │   ├── editor.html          # Markup and toolbar controls
 │   ├── editor.css           # Modern dark-mode styling
 │   └── editor.js            # Canvas rendering, URL bar, shapes & clipboard logic
-├── PLAN.md                  # Project architecture and development plan
 └── README.md                # Project documentation
 ```
 

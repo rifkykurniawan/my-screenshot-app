@@ -1,15 +1,16 @@
 {
   "manifest_version": 3,
   "name": "Screen Snap & Rectangle Editor",
-  "version": "1.0.0",
-  "description": "Capture screen viewport instantly, draw rectangles to highlight content, and copy directly to clipboard.",
+  "version": "1.1.0",
+  "description": "Capture screen viewport or window with DevTools, draw rectangles to highlight content, and copy directly to clipboard.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "Capture Screen & Annotate (Alt+Shift+S)",
+    "default_title": "Screen Snap Menu",
+    "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
@@ -22,7 +23,8 @@
   "permissions": [
     "activeTab",
     "storage",
-    "unlimitedStorage"
+    "unlimitedStorage",
+    "windows"
   ],
   "commands": {
     "take-screenshot": {
@@ -30,7 +32,14 @@
         "default": "Alt+Shift+S",
         "mac": "Alt+Shift+S"
       },
-      "description": "Take viewport screenshot and open editor"
+      "description": "Take normal viewport screenshot and open editor"
+    },
+    "take-window-screenshot": {
+      "suggested_key": {
+        "default": "Alt+Shift+W",
+        "mac": "Alt+Shift+W"
+      },
+      "description": "Capture window with DevTools and open editor"
     }
   }
 }
