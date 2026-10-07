@@ -1,6 +1,7 @@
 // Screen Snap Editor Logic with Top URL Bar
 (() => {
   const canvas = document.getElementById('screenshot-canvas');
+  const canvasContainer = document.getElementById('canvas-container');
   const ctx = canvas.getContext('2d');
   const dimensionsBadge = document.getElementById('image-dimensions');
   const toast = document.getElementById('toast');
@@ -8,6 +9,7 @@
   const toastDesc = document.getElementById('toast-desc');
 
   // Toolbar Elements
+  const toolBtns = document.querySelectorAll('.tool-btn');
   const colorBtns = document.querySelectorAll('.color-btn');
   const customColorPicker = document.getElementById('custom-color-picker');
   const strokeBtns = document.querySelectorAll('.stroke-btn');
@@ -18,12 +20,14 @@
   const btnCopy = document.getElementById('btn-copy');
 
   // Drawing & State
+  let currentTool = 'rectangle'; // 'rectangle' | 'arrow' | 'text'
   let currentColor = '#ef4444'; // Crimson Red default
   let currentStroke = 4;        // 4px default
   let showUrlBar = true;
   let isDrawing = false;
   let startX = 0;
   let startY = 0;
+  let activeTextInput = null;
 
   // Metadata
   let sourceUrl = '';
@@ -33,12 +37,12 @@
 
   // Shape-based History (preserves quality and enables seamless URL bar toggling)
   const MAX_HISTORY = 40;
-  let rectangles = []; // Array of { x, y, w, h, color, stroke } relative to image
-  let undoStack = [[]]; // Stack of rectangles array snapshots
+  let shapes = []; // Array of shape objects ({ type: 'rectangle', ... } or { type: 'arrow', ... })
+  let undoStack = [[]]; // Stack of shapes array snapshots
   let redoStack = [];
 
   // Live drag preview state
-  let dragPreviewRect = null;
+  let dragPreviewShape = null;
 
   // Initialize
   init();
@@ -138,7 +142,7 @@
 
     tctx.font = '16px system-ui, sans-serif';
     tctx.fillStyle = '#94a3b8';
-    tctx.fillText('Notice the URL bar above! Drag to draw rectangles, then Copy to Clipboard.', testCanvas.width / 2, testCanvas.height / 2 + 20);
+    tctx.fillText('Notice the URL bar above! Draw rectangles, arrows, or text, then Copy to Clipboard.', testCanvas.width / 2, testCanvas.height / 2 + 20);
 
     baseImage = testCanvas;
     render();
@@ -151,7 +155,7 @@
     return Math.max(40, Math.round(imgWidth * 0.025));
   }
 
-  // Main Render Function: redraws banner, image, and all rectangles
+  // Main Render Function: redraws banner, image, and all shapes
   function render() {
     if (!baseImage) return;
 
@@ -173,21 +177,14 @@
     // 2. Draw Screenshot Image below the banner
     ctx.drawImage(baseImage, 0, bannerHeight, imgWidth, imgHeight);
 
-    // 3. Draw Committed Rectangles
-    for (const r of rectangles) {
-      drawRectangle(r.x, r.y + bannerHeight, r.w, r.h, r.color, r.stroke);
+    // 3. Draw Committed Shapes
+    for (const shape of shapes) {
+      drawShape(shape, bannerHeight);
     }
 
-    // 4. Draw Live Dragging Preview Rectangle
-    if (dragPreviewRect) {
-      drawRectangle(
-        dragPreviewRect.x,
-        dragPreviewRect.y + bannerHeight,
-        dragPreviewRect.w,
-        dragPreviewRect.h,
-        dragPreviewRect.color,
-        dragPreviewRect.stroke
-      );
+    // 4. Draw Live Dragging Preview Shape
+    if (dragPreviewShape) {
+      drawShape(dragPreviewShape, bannerHeight);
     }
 
     // Update Dimensions Badge
@@ -316,6 +313,52 @@
     ctx.closePath();
   }
 
+  // Dispatcher for drawing any shape
+  function drawShape(shape, bannerOffset = 0) {
+    if (!shape) return;
+    if (shape.type === 'rectangle') {
+      drawRectangle(shape.x, shape.y + bannerOffset, shape.w, shape.h, shape.color, shape.stroke);
+    } else if (shape.type === 'arrow') {
+      drawArrow(shape.x1, shape.y1 + bannerOffset, shape.x2, shape.y2 + bannerOffset, shape.color, shape.stroke);
+    } else if (shape.type === 'text') {
+      drawText(shape.text, shape.x, shape.y + bannerOffset, shape.color, shape.fontSize);
+    }
+  }
+
+  // Helper: Draw high-legibility bold text annotation
+  function drawText(text, x, y, color, fontSize) {
+    ctx.save();
+    ctx.font = `700 ${fontSize}px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif`;
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'left';
+
+    // Drop shadow for legibility over both dark and light backgrounds
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+    ctx.shadowBlur = Math.max(3, Math.round(fontSize * 0.12));
+    ctx.shadowOffsetX = Math.max(1, Math.round(fontSize * 0.04));
+    ctx.shadowOffsetY = Math.max(1, Math.round(fontSize * 0.04));
+
+    ctx.fillStyle = color;
+
+    const lines = text.split('\n');
+    const lineHeight = fontSize * 1.25;
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i], x, y + (i * lineHeight));
+    }
+
+    ctx.restore();
+  }
+
+  function getBaseFontSize(stroke) {
+    switch (stroke) {
+      case 2: return 16;
+      case 4: return 22;
+      case 7: return 32;
+      case 11: return 44;
+      default: return 22;
+    }
+  }
+
   // Helper: Draw single rectangle
   function drawRectangle(x, y, w, h, color, stroke) {
     ctx.save();
@@ -323,6 +366,46 @@
     ctx.lineWidth = stroke;
     ctx.lineJoin = 'miter';
     ctx.strokeRect(x, y, w, h);
+    ctx.restore();
+  }
+
+  // Helper: Draw clean arrow with chevron wings (matching requested design)
+  function drawArrow(x1, y1, x2, y2, color, stroke) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const length = Math.hypot(dx, dy);
+    if (length < 2) return;
+
+    const angle = Math.atan2(dy, dx);
+    const headLength = Math.max(14, Math.min(stroke * 3.6, length * 0.45));
+    const arrowAngle = 0.52; // ~30 degrees
+
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = stroke;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Main shaft line
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    // Arrowhead chevron wings
+    ctx.beginPath();
+    ctx.moveTo(
+      x2 - headLength * Math.cos(angle - arrowAngle),
+      y2 - headLength * Math.sin(angle - arrowAngle)
+    );
+    ctx.lineTo(x2, y2);
+    ctx.lineTo(
+      x2 - headLength * Math.cos(angle + arrowAngle),
+      y2 - headLength * Math.sin(angle + arrowAngle)
+    );
+    ctx.stroke();
+
     ctx.restore();
   }
 
@@ -343,12 +426,23 @@
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
 
+    // Tool selector buttons
+    toolBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        setTool(btn.dataset.tool);
+      });
+    });
+
     // Color buttons
     colorBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         colorBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentColor = btn.dataset.color;
+        if (activeTextInput) {
+          activeTextInput.color = currentColor;
+          activeTextInput.textarea.style.color = currentColor;
+        }
       });
     });
 
@@ -356,6 +450,10 @@
     customColorPicker.addEventListener('input', (e) => {
       colorBtns.forEach(b => b.classList.remove('active'));
       currentColor = e.target.value;
+      if (activeTextInput) {
+        activeTextInput.color = currentColor;
+        activeTextInput.textarea.style.color = currentColor;
+      }
     });
 
     // Stroke buttons
@@ -364,6 +462,10 @@
         strokeBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentStroke = parseInt(btn.dataset.stroke, 10);
+        if (activeTextInput) {
+          activeTextInput.baseFontSize = getBaseFontSize(currentStroke);
+          activeTextInput.textarea.style.fontSize = `${activeTextInput.baseFontSize}px`;
+        }
       });
     });
 
@@ -385,8 +487,139 @@
     window.addEventListener('keydown', onKeyDown);
   }
 
+  function setTool(tool) {
+    if (tool !== 'rectangle' && tool !== 'arrow' && tool !== 'text') return;
+    if (activeTextInput && tool !== 'text') {
+      commitActiveText();
+    }
+    currentTool = tool;
+    toolBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tool === tool);
+    });
+    canvas.classList.toggle('tool-text', tool === 'text');
+  }
+
+  // Active Text Annotation Operations
+  function commitActiveText() {
+    if (!activeTextInput) return;
+    const data = activeTextInput;
+    activeTextInput = null;
+
+    const text = data.textarea.value.trim();
+    if (data.textarea.parentNode) {
+      data.textarea.remove();
+    }
+
+    if (text.length > 0) {
+      const canvasFontSize = Math.max(12, Math.round(data.baseFontSize * data.scaleX));
+      shapes.push({
+        type: 'text',
+        text,
+        x: data.canvasX,
+        y: data.canvasY,
+        color: data.color,
+        fontSize: canvasFontSize
+      });
+      commitHistory();
+      render();
+    }
+  }
+
+  function cancelActiveText() {
+    if (!activeTextInput) return;
+    const data = activeTextInput;
+    activeTextInput = null;
+    if (data.textarea.parentNode) {
+      data.textarea.remove();
+    }
+  }
+
+  function spawnTextInput(clientX, clientY) {
+    commitActiveText(); // Commit any existing open text input first
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const bannerHeight = getBannerHeight();
+
+    const containerX = clientX - rect.left;
+    const containerY = clientY - rect.top;
+
+    const baseFontSize = getBaseFontSize(currentStroke);
+    const textarea = document.createElement('textarea');
+    textarea.className = 'canvas-text-editor';
+    textarea.placeholder = 'Type text...';
+    textarea.rows = 1;
+
+    // Position textarea so that top-left text aligns with clicked position
+    textarea.style.left = `${Math.max(0, containerX)}px`;
+    textarea.style.top = `${Math.max(0, containerY)}px`;
+    textarea.style.fontSize = `${baseFontSize}px`;
+    textarea.style.color = currentColor;
+    textarea.style.minWidth = '130px';
+
+    // Canvas coordinate where the text starts
+    const canvasX = (containerX + 8) * scaleX;
+    const canvasY = (containerY + 4) * scaleY - bannerHeight;
+
+    activeTextInput = {
+      textarea,
+      containerX,
+      containerY,
+      canvasX,
+      canvasY,
+      baseFontSize,
+      scaleX,
+      scaleY,
+      color: currentColor
+    };
+
+    const adjustSize = () => {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+      textarea.style.width = 'auto';
+      textarea.style.width = `${Math.max(130, textarea.scrollWidth + 14)}px`;
+    };
+
+    textarea.addEventListener('input', adjustSize);
+
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        commitActiveText();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelActiveText();
+      }
+    });
+
+    textarea.addEventListener('blur', () => {
+      setTimeout(() => {
+        commitActiveText();
+      }, 120);
+    });
+
+    canvasContainer.appendChild(textarea);
+    adjustSize();
+    textarea.focus();
+  }
+
   function onMouseDown(e) {
     if (e.button !== 0) return; // Left mouse click only
+
+    // If clicking on active text editor itself, allow native typing & selection
+    if (e.target && e.target.classList.contains('canvas-text-editor')) {
+      return;
+    }
+
+    if (currentTool === 'text') {
+      spawnTextInput(e.clientX, e.clientY);
+      return;
+    }
+
+    if (activeTextInput) {
+      commitActiveText();
+    }
 
     const coords = getCanvasCoordinates(e);
     const bannerHeight = getBannerHeight();
@@ -405,21 +638,37 @@
     const currentX = coords.x;
     const currentY = coords.y - bannerHeight;
 
-    const rx = Math.min(startX, currentX);
-    const ry = Math.min(startY, currentY);
-    const rw = Math.abs(currentX - startX);
-    const rh = Math.abs(currentY - startY);
+    if (currentTool === 'rectangle') {
+      const rx = Math.min(startX, currentX);
+      const ry = Math.min(startY, currentY);
+      const rw = Math.abs(currentX - startX);
+      const rh = Math.abs(currentY - startY);
 
-    if (rw === 0 || rh === 0) return;
+      if (rw === 0 || rh === 0) return;
 
-    dragPreviewRect = {
-      x: rx,
-      y: ry,
-      w: rw,
-      h: rh,
-      color: currentColor,
-      stroke: currentStroke
-    };
+      dragPreviewShape = {
+        type: 'rectangle',
+        x: rx,
+        y: ry,
+        w: rw,
+        h: rh,
+        color: currentColor,
+        stroke: currentStroke
+      };
+    } else if (currentTool === 'arrow') {
+      const dist = Math.hypot(currentX - startX, currentY - startY);
+      if (dist < 2) return;
+
+      dragPreviewShape = {
+        type: 'arrow',
+        x1: startX,
+        y1: startY,
+        x2: currentX,
+        y2: currentY,
+        color: currentColor,
+        stroke: currentStroke
+      };
+    }
 
     render();
   }
@@ -428,18 +677,30 @@
     if (!isDrawing) return;
     isDrawing = false;
 
-    if (dragPreviewRect && dragPreviewRect.w > 3 && dragPreviewRect.h > 3) {
-      rectangles.push({ ...dragPreviewRect });
-      commitHistory();
+    if (dragPreviewShape) {
+      let isValid = false;
+      if (dragPreviewShape.type === 'rectangle' && dragPreviewShape.w > 3 && dragPreviewShape.h > 3) {
+        isValid = true;
+      } else if (dragPreviewShape.type === 'arrow') {
+        const length = Math.hypot(dragPreviewShape.x2 - dragPreviewShape.x1, dragPreviewShape.y2 - dragPreviewShape.y1);
+        if (length > 5) {
+          isValid = true;
+        }
+      }
+
+      if (isValid) {
+        shapes.push({ ...dragPreviewShape });
+        commitHistory();
+      }
     }
 
-    dragPreviewRect = null;
+    dragPreviewShape = null;
     render();
   }
 
   // History Management
   function commitHistory() {
-    undoStack.push([...rectangles]);
+    undoStack.push([...shapes]);
     if (undoStack.length > MAX_HISTORY) {
       undoStack.shift();
     }
@@ -448,31 +709,34 @@
   }
 
   function undo() {
+    commitActiveText();
     if (undoStack.length <= 1) return;
 
     const current = undoStack.pop();
     redoStack.push(current);
 
-    rectangles = [...undoStack[undoStack.length - 1]];
+    shapes = [...undoStack[undoStack.length - 1]];
     render();
     updateHistoryButtons();
   }
 
   function redo() {
+    commitActiveText();
     if (redoStack.length === 0) return;
 
     const next = redoStack.pop();
     undoStack.push(next);
 
-    rectangles = [...next];
+    shapes = [...next];
     render();
     updateHistoryButtons();
   }
 
   function clearAll() {
-    if (rectangles.length === 0) return;
+    commitActiveText();
+    if (shapes.length === 0) return;
 
-    rectangles = [];
+    shapes = [];
     commitHistory();
     render();
   }
@@ -484,7 +748,26 @@
 
   // Keyboard Shortcuts Handler
   function onKeyDown(e) {
+    // If typing inside an input or textarea, do not intercept keystrokes
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+      return;
+    }
+
     const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+
+    // Tool shortcuts: R for Rectangle, A for Arrow, T for Text (when no modifier is held)
+    if (!isCtrlOrMeta && !e.altKey && !e.shiftKey) {
+      if (e.key.toLowerCase() === 'r') {
+        setTool('rectangle');
+        return;
+      } else if (e.key.toLowerCase() === 'a') {
+        setTool('arrow');
+        return;
+      } else if (e.key.toLowerCase() === 't') {
+        setTool('text');
+        return;
+      }
+    }
 
     // Ctrl+Z: Undo
     if (isCtrlOrMeta && !e.shiftKey && e.key.toLowerCase() === 'z') {
@@ -510,13 +793,14 @@
     // Escape: Cancel current drawing drag
     if (e.key === 'Escape' && isDrawing) {
       isDrawing = false;
-      dragPreviewRect = null;
+      dragPreviewShape = null;
       render();
     }
   }
 
   // Copy to Clipboard and Auto-Close
   async function copyToClipboard() {
+    commitActiveText();
     btnCopy.disabled = true;
     btnCopy.innerHTML = `
       <svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
