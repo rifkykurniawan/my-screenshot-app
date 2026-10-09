@@ -2,6 +2,7 @@
 (() => {
   const canvas = document.getElementById('screenshot-canvas');
   const canvasContainer = document.getElementById('canvas-container');
+  const workspace = document.getElementById('workspace');
   const ctx = canvas.getContext('2d');
   const dimensionsBadge = document.getElementById('image-dimensions');
   const toast = document.getElementById('toast');
@@ -435,6 +436,9 @@
 
     // Color buttons
     colorBtns.forEach(btn => {
+      btn.addEventListener('mousedown', (e) => {
+        if (activeTextInput) e.preventDefault();
+      });
       btn.addEventListener('click', () => {
         colorBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
@@ -458,6 +462,9 @@
 
     // Stroke buttons
     strokeBtns.forEach(btn => {
+      btn.addEventListener('mousedown', (e) => {
+        if (activeTextInput) e.preventDefault();
+      });
       btn.addEventListener('click', () => {
         strokeBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
@@ -465,6 +472,9 @@
         if (activeTextInput) {
           activeTextInput.baseFontSize = getBaseFontSize(currentStroke);
           activeTextInput.textarea.style.fontSize = `${activeTextInput.baseFontSize}px`;
+          if (typeof activeTextInput.adjustSize === 'function') {
+            activeTextInput.adjustSize();
+          }
         }
       });
     });
@@ -474,6 +484,15 @@
       toggleUrlBar.addEventListener('change', (e) => {
         showUrlBar = e.target.checked;
         render();
+      });
+    }
+
+    // Workspace click (clicks outside the canvas commit any active text input)
+    if (workspace) {
+      workspace.addEventListener('mousedown', (e) => {
+        if (activeTextInput && !canvasContainer.contains(e.target)) {
+          commitActiveText();
+        }
       });
     }
 
@@ -504,19 +523,29 @@
     if (!activeTextInput) return;
     const data = activeTextInput;
     activeTextInput = null;
+    data.isClosed = true;
 
     const text = data.textarea.value.trim();
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const bannerHeight = getBannerHeight();
+
+    // Compute coordinate relative to screenshot image below top banner
+    const canvasX = (data.textarea.offsetLeft + 9.5) * scaleX;
+    const canvasY = (data.textarea.offsetTop + 5.5) * scaleY - bannerHeight;
+
     if (data.textarea.parentNode) {
       data.textarea.remove();
     }
 
     if (text.length > 0) {
-      const canvasFontSize = Math.max(12, Math.round(data.baseFontSize * data.scaleX));
+      const canvasFontSize = Math.max(12, Math.round(data.baseFontSize * scaleX));
       shapes.push({
         type: 'text',
         text,
-        x: data.canvasX,
-        y: data.canvasY,
+        x: canvasX,
+        y: canvasY,
         color: data.color,
         fontSize: canvasFontSize
       });
@@ -529,6 +558,7 @@
     if (!activeTextInput) return;
     const data = activeTextInput;
     activeTextInput = null;
+    data.isClosed = true;
     if (data.textarea.parentNode) {
       data.textarea.remove();
     }
@@ -540,7 +570,6 @@
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    const bannerHeight = getBannerHeight();
 
     const containerX = clientX - rect.left;
     const containerY = clientY - rect.top;
@@ -549,42 +578,44 @@
     const textarea = document.createElement('textarea');
     textarea.className = 'canvas-text-editor';
     textarea.placeholder = 'Type text...';
+    textarea.spellcheck = false;
     textarea.rows = 1;
 
-    // Position textarea so that top-left text aligns with clicked position
-    textarea.style.left = `${Math.max(0, containerX)}px`;
-    textarea.style.top = `${Math.max(0, containerY)}px`;
+    // Keep textarea within visible bounds of the canvas container
+    const minW = 140;
+    const posX = Math.max(4, Math.min(containerX, rect.width - minW - 4));
+    const posY = Math.max(4, Math.min(containerY, rect.height - 40));
+
+    textarea.style.left = `${posX}px`;
+    textarea.style.top = `${posY}px`;
     textarea.style.fontSize = `${baseFontSize}px`;
     textarea.style.color = currentColor;
-    textarea.style.minWidth = '130px';
-
-    // Canvas coordinate where the text starts
-    const canvasX = (containerX + 8) * scaleX;
-    const canvasY = (containerY + 4) * scaleY - bannerHeight;
-
-    activeTextInput = {
-      textarea,
-      containerX,
-      containerY,
-      canvasX,
-      canvasY,
-      baseFontSize,
-      scaleX,
-      scaleY,
-      color: currentColor
-    };
+    textarea.style.minWidth = `${minW}px`;
 
     const adjustSize = () => {
       textarea.style.height = 'auto';
       textarea.style.height = `${textarea.scrollHeight}px`;
       textarea.style.width = 'auto';
-      textarea.style.width = `${Math.max(130, textarea.scrollWidth + 14)}px`;
+      textarea.style.width = `${Math.max(minW, textarea.scrollWidth + 14)}px`;
     };
+
+    const textData = {
+      textarea,
+      baseFontSize,
+      scaleX,
+      scaleY,
+      color: currentColor,
+      adjustSize,
+      isClosed: false
+    };
+
+    activeTextInput = textData;
 
     textarea.addEventListener('input', adjustSize);
 
     textarea.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
+      // Enter without Shift or Ctrl+Enter / Cmd+Enter commits text
+      if ((e.key === 'Enter' && !e.shiftKey) || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) {
         e.preventDefault();
         commitActiveText();
       } else if (e.key === 'Escape') {
@@ -595,13 +626,19 @@
 
     textarea.addEventListener('blur', () => {
       setTimeout(() => {
-        commitActiveText();
-      }, 120);
+        if (!textData.isClosed && activeTextInput && activeTextInput.textarea === textarea) {
+          commitActiveText();
+        }
+      }, 150);
     });
 
     canvasContainer.appendChild(textarea);
     adjustSize();
-    textarea.focus();
+
+    // Focus after current event loop cycle to guarantee focus isn't overridden by mouse event
+    setTimeout(() => {
+      textarea.focus();
+    }, 0);
   }
 
   function onMouseDown(e) {
@@ -613,6 +650,7 @@
     }
 
     if (currentTool === 'text') {
+      e.preventDefault(); // Prevents canvas from stealing focus and triggering blur
       spawnTextInput(e.clientX, e.clientY);
       return;
     }

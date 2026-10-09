@@ -418,6 +418,15 @@ body {
   z-index: 20;
   white-space: pre;
   box-sizing: border-box;
+  user-select: text;
+  -webkit-user-select: text;
+  caret-color: currentColor;
+  pointer-events: auto;
+}
+
+.canvas-text-editor::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 500;
 }
 
 /* Toast Notification */
