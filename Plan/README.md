@@ -2,7 +2,7 @@
 
 Plan for building new features on top of Screen Snap (Chrome MV3 extension).
 
-- **Period:** Mon 2026-10-12 to Tue 2026-11-10 (30 calendar days)
+- **Period:** Tue 2026-10-13 to Wed 2026-11-11 (30 calendar days)
 - **Schedule:** 6 working days per week, Sunday off (rest or catch-up)
 - **Working days:** 26 (Sundays: Oct 18, Oct 25, Nov 1, Nov 8)
 
