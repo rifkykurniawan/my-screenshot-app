@@ -21,7 +21,7 @@
   const btnCopy = document.getElementById('btn-copy');
 
   // Drawing & State
-  let currentTool = 'rectangle'; // 'rectangle' | 'arrow' | 'text'
+  let currentTool = 'rectangle'; // 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'text'
   let currentColor = '#ef4444'; // Crimson Red default
   let currentStroke = 4;        // 4px default
   let showUrlBar = true;
@@ -38,7 +38,7 @@
 
   // Shape-based History (preserves quality and enables seamless URL bar toggling)
   const MAX_HISTORY = 40;
-  let shapes = []; // Array of shape objects ({ type: 'rectangle', ... } or { type: 'arrow', ... })
+  let shapes = []; // Array of shape objects
   let undoStack = [[]]; // Stack of shapes array snapshots
   let redoStack = [];
 
@@ -143,7 +143,7 @@
 
     tctx.font = '16px system-ui, sans-serif';
     tctx.fillStyle = '#94a3b8';
-    tctx.fillText('Notice the URL bar above! Draw rectangles, arrows, or text, then Copy to Clipboard.', testCanvas.width / 2, testCanvas.height / 2 + 20);
+    tctx.fillText('Notice the URL bar above! Draw shapes, lines, arrows, or text, then Copy to Clipboard.', testCanvas.width / 2, testCanvas.height / 2 + 20);
 
     baseImage = testCanvas;
     render();
@@ -319,6 +319,10 @@
     if (!shape) return;
     if (shape.type === 'rectangle') {
       drawRectangle(shape.x, shape.y + bannerOffset, shape.w, shape.h, shape.color, shape.stroke);
+    } else if (shape.type === 'ellipse') {
+      drawEllipse(shape.x, shape.y + bannerOffset, shape.w, shape.h, shape.color, shape.stroke);
+    } else if (shape.type === 'line') {
+      drawLine(shape.x1, shape.y1 + bannerOffset, shape.x2, shape.y2 + bannerOffset, shape.color, shape.stroke);
     } else if (shape.type === 'arrow') {
       drawArrow(shape.x1, shape.y1 + bannerOffset, shape.x2, shape.y2 + bannerOffset, shape.color, shape.stroke);
     } else if (shape.type === 'text') {
@@ -367,6 +371,36 @@
     ctx.lineWidth = stroke;
     ctx.lineJoin = 'miter';
     ctx.strokeRect(x, y, w, h);
+    ctx.restore();
+  }
+
+  // Helper: Draw single ellipse
+  function drawEllipse(x, y, w, h, color, stroke) {
+    if (w <= 0 || h <= 0) return;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = stroke;
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + h / 2, Math.max(0.1, w / 2), Math.max(0.1, h / 2), 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Helper: Draw single straight line
+  function drawLine(x1, y1, x2, y2, color, stroke) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    if (Math.hypot(dx, dy) < 1) return;
+
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = stroke;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -507,7 +541,7 @@
   }
 
   function setTool(tool) {
-    if (tool !== 'rectangle' && tool !== 'arrow' && tool !== 'text') return;
+    if (tool !== 'rectangle' && tool !== 'ellipse' && tool !== 'line' && tool !== 'arrow' && tool !== 'text') return;
     if (activeTextInput && tool !== 'text') {
       commitActiveText();
     }
@@ -676,16 +710,24 @@
     const currentX = coords.x;
     const currentY = coords.y - bannerHeight;
 
-    if (currentTool === 'rectangle') {
-      const rx = Math.min(startX, currentX);
-      const ry = Math.min(startY, currentY);
-      const rw = Math.abs(currentX - startX);
-      const rh = Math.abs(currentY - startY);
+    if (currentTool === 'rectangle' || currentTool === 'ellipse') {
+      let rw = Math.abs(currentX - startX);
+      let rh = Math.abs(currentY - startY);
+
+      if (e.shiftKey) {
+        // Holding Shift constrains to 1:1 aspect ratio (circle for ellipse, square for rectangle)
+        const size = Math.max(rw, rh);
+        rw = size;
+        rh = size;
+      }
 
       if (rw === 0 || rh === 0) return;
 
+      const rx = currentX >= startX ? startX : startX - rw;
+      const ry = currentY >= startY ? startY : startY - rh;
+
       dragPreviewShape = {
-        type: 'rectangle',
+        type: currentTool,
         x: rx,
         y: ry,
         w: rw,
@@ -693,16 +735,30 @@
         color: currentColor,
         stroke: currentStroke
       };
-    } else if (currentTool === 'arrow') {
-      const dist = Math.hypot(currentX - startX, currentY - startY);
+    } else if (currentTool === 'arrow' || currentTool === 'line') {
+      let endX = currentX;
+      let endY = currentY;
+
+      if (e.shiftKey) {
+        // Holding Shift snaps line / arrow to 45 degree increments
+        const dx = currentX - startX;
+        const dy = currentY - startY;
+        const angle = Math.atan2(dy, dx);
+        const snappedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+        const dist = Math.hypot(dx, dy);
+        endX = startX + dist * Math.cos(snappedAngle);
+        endY = startY + dist * Math.sin(snappedAngle);
+      }
+
+      const dist = Math.hypot(endX - startX, endY - startY);
       if (dist < 2) return;
 
       dragPreviewShape = {
-        type: 'arrow',
+        type: currentTool,
         x1: startX,
         y1: startY,
-        x2: currentX,
-        y2: currentY,
+        x2: endX,
+        y2: endY,
         color: currentColor,
         stroke: currentStroke
       };
@@ -717,9 +773,9 @@
 
     if (dragPreviewShape) {
       let isValid = false;
-      if (dragPreviewShape.type === 'rectangle' && dragPreviewShape.w > 3 && dragPreviewShape.h > 3) {
+      if ((dragPreviewShape.type === 'rectangle' || dragPreviewShape.type === 'ellipse') && dragPreviewShape.w > 3 && dragPreviewShape.h > 3) {
         isValid = true;
-      } else if (dragPreviewShape.type === 'arrow') {
+      } else if (dragPreviewShape.type === 'arrow' || dragPreviewShape.type === 'line') {
         const length = Math.hypot(dragPreviewShape.x2 - dragPreviewShape.x1, dragPreviewShape.y2 - dragPreviewShape.y1);
         if (length > 5) {
           isValid = true;
@@ -793,10 +849,16 @@
 
     const isCtrlOrMeta = e.ctrlKey || e.metaKey;
 
-    // Tool shortcuts: R for Rectangle, A for Arrow, T for Text (when no modifier is held)
+    // Tool shortcuts: R for Rectangle, O for Ellipse, L for Line, A for Arrow, T for Text (when no modifier is held)
     if (!isCtrlOrMeta && !e.altKey && !e.shiftKey) {
       if (e.key.toLowerCase() === 'r') {
         setTool('rectangle');
+        return;
+      } else if (e.key.toLowerCase() === 'o') {
+        setTool('ellipse');
+        return;
+      } else if (e.key.toLowerCase() === 'l') {
+        setTool('line');
         return;
       } else if (e.key.toLowerCase() === 'a') {
         setTool('arrow');

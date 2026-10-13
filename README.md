@@ -11,9 +11,11 @@ A lightweight, productivity-focused Chrome extension for capturing and annotatin
   - **Include DevTools**: Full Chrome window capture including inspect element / DevTools panel and browser bar (`Alt+Shift+W`).
 - **DevTools / Inspect Element Capture**: Captures the complete browser window with docked developer tools (Console, Network, Elements, etc.) without cropping.
 - **Top URL & Timestamp Header**: Automatically appends a clean browser-style top banner containing the source page URL and capture timestamp (YYYY-MM-DD HH:MM:SS) for viewport captures. Includes an on/off toggle in the toolbar.
-- **Annotation Tools (Rectangle, Arrow, Text)**: 
-  - **Rectangle Tool (`R`)**: Draw outline rectangles smoothly to highlight key areas, text, or elements.
-  - **Arrow Tool (`A`)**: Draw directional arrows with crisp chevrons to point directly to issues or buttons.
+- **Annotation Tools (Rectangle, Ellipse, Line, Arrow, Text)**: 
+  - **Rectangle Tool (`R`)**: Draw outline rectangles smoothly to highlight key areas, text, or elements. Hold `Shift` to constrain to a square.
+  - **Ellipse Tool (`O`)**: Draw clean circular or oval highlights around UI controls. Hold `Shift` to constrain to a perfect circle.
+  - **Line Tool (`L`)**: Draw straight rule lines to separate or underline content. Hold `Shift` to snap angle in 45° increments.
+  - **Arrow Tool (`A`)**: Draw directional arrows with crisp chevrons to point directly to issues or buttons. Hold `Shift` to snap angle in 45° increments.
   - **Text Tool (`T`)**: Click anywhere on the screenshot to type custom text annotations with auto-resizing, live colors, and clear drop-shadow legibility.
 - **Curated Color Palette**: Pre-configured high-contrast colors (Crimson Red, Orange, Yellow, Green, Cyan, Blue, White) plus a native custom color picker.
 - **Adjustable Stroke / Font Size**: Choose from 4 line weights & corresponding font sizes (Thin: 2px / 16px, Medium: 4px / 22px, Thick: 7px / 32px, Bold: 11px / 44px).
@@ -68,6 +70,8 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 | `Alt + Shift + S` *(Option+Shift+S on Mac)* | Capture active viewport & open editor |
 | `Alt + Shift + W` *(Option+Shift+W on Mac)* | Capture window with DevTools & open editor |
 | `R` | Select Rectangle tool |
+| `O` | Select Ellipse tool |
+| `L` | Select Line tool |
 | `A` | Select Arrow tool |
 | `T` | Select Text tool |
 | `Enter` *(while typing text)* | Commit text annotation |
