@@ -4,9 +4,9 @@ Goal: extend the editor beyond rectangle/arrow/text.
 Main files: `editor/editor.js`, `editor/editor.html`, `editor/editor.css`.
 
 ## Day 1 (Tue Oct 13): Line and ellipse tools
-- [ ] Add Line tool (`L`) and Ellipse tool (`O`) to the toolbar
-- [ ] Reuse the drag-to-draw flow and the color/stroke settings
-- [ ] Support undo/redo for both
+- [x] Add Line tool (`L`) and Ellipse tool (`O`) to the toolbar
+- [x] Reuse the drag-to-draw flow and the color/stroke settings
+- [x] Support undo/redo for both
 - **Done when:** both shapes can be drawn, undone and copied.
 
 ## Day 2 (Wed Oct 14): Highlighter
