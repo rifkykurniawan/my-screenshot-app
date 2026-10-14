@@ -53,7 +53,7 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 3. Select your desired capture mode:
    - **Normal Viewport**: Instantly captures the visible page area and opens the editor.
    - **Include DevTools**: A screen-picker prompt will appear. Under the **"Window"** tab, select your Chrome window and click **Share**.
-4. Draw rectangles, arrows, or add text to highlight elements or point out details.
+4. Draw rectangles, ellipses, lines, arrows, highlights, or add text to point out details.
 5. Click **"Copy to Clipboard"** (or press `Ctrl + C` / `Enter`).
 6. Paste (`Ctrl + V` / `Cmd + V`) directly into Slack, Teams, Notion, Google Docs, GitHub, etc.
 
@@ -73,6 +73,7 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 | `O` | Select Ellipse tool |
 | `L` | Select Line tool |
 | `A` | Select Arrow tool |
+| `H` | Select Highlighter tool (Hold `Shift` to snap straight horizontal highlight) |
 | `T` | Select Text tool |
 | `Enter` *(while typing text)* | Commit text annotation |
 | `Shift + Enter` *(while typing text)* | Insert newline in text annotation |

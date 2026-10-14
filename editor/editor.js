@@ -14,6 +14,9 @@
   const colorBtns = document.querySelectorAll('.color-btn');
   const customColorPicker = document.getElementById('custom-color-picker');
   const strokeBtns = document.querySelectorAll('.stroke-btn');
+  const opacityControl = document.getElementById('opacity-control');
+  const opacitySlider = document.getElementById('opacity-slider');
+  const opacityVal = document.getElementById('opacity-val');
   const toggleUrlBar = document.getElementById('toggle-url-bar');
   const btnUndo = document.getElementById('btn-undo');
   const btnRedo = document.getElementById('btn-redo');
@@ -21,9 +24,11 @@
   const btnCopy = document.getElementById('btn-copy');
 
   // Drawing & State
-  let currentTool = 'rectangle'; // 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'text'
+  let currentTool = 'rectangle'; // 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'highlighter' | 'text'
   let currentColor = '#ef4444'; // Crimson Red default
   let currentStroke = 4;        // 4px default
+  let currentOpacity = 0.4;     // 40% default semi-transparent opacity for highlighter
+  let currentHighlighterPoints = [];
   let showUrlBar = true;
   let isDrawing = false;
   let startX = 0;
@@ -143,7 +148,7 @@
 
     tctx.font = '16px system-ui, sans-serif';
     tctx.fillStyle = '#94a3b8';
-    tctx.fillText('Notice the URL bar above! Draw shapes, lines, arrows, or text, then Copy to Clipboard.', testCanvas.width / 2, testCanvas.height / 2 + 20);
+    tctx.fillText('Notice the URL bar above! Draw shapes, lines, arrows, highlights, or text, then Copy to Clipboard.', testCanvas.width / 2, testCanvas.height / 2 + 20);
 
     baseImage = testCanvas;
     render();
@@ -325,8 +330,48 @@
       drawLine(shape.x1, shape.y1 + bannerOffset, shape.x2, shape.y2 + bannerOffset, shape.color, shape.stroke);
     } else if (shape.type === 'arrow') {
       drawArrow(shape.x1, shape.y1 + bannerOffset, shape.x2, shape.y2 + bannerOffset, shape.color, shape.stroke);
+    } else if (shape.type === 'highlighter') {
+      drawHighlighter(shape.points, bannerOffset, shape.color, shape.stroke, shape.opacity);
     } else if (shape.type === 'text') {
       drawText(shape.text, shape.x, shape.y + bannerOffset, shape.color, shape.fontSize);
+    }
+  }
+
+  // Helper: Draw semi-transparent wide stroke highlighter
+  function drawHighlighter(points, bannerOffset, color, stroke, opacity = 0.4) {
+    if (!points || points.length === 0) return;
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = stroke;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    if (points.length === 1) {
+      ctx.beginPath();
+      ctx.arc(points[0].x, points[0].y + bannerOffset, stroke / 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y + bannerOffset);
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y + bannerOffset);
+      }
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  // Helper: Calculate wide stroke size for highlighter
+  function getHighlighterStroke(stroke) {
+    switch (stroke) {
+      case 2: return 14;
+      case 4: return 24;
+      case 7: return 36;
+      case 11: return 52;
+      default: return Math.max(14, stroke * 5);
     }
   }
 
@@ -513,6 +558,17 @@
       });
     });
 
+    // Opacity Slider
+    if (opacitySlider) {
+      opacitySlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        currentOpacity = val / 100;
+        if (opacityVal) {
+          opacityVal.textContent = `${val}%`;
+        }
+      });
+    }
+
     // Toggle URL Bar
     if (toggleUrlBar) {
       toggleUrlBar.addEventListener('change', (e) => {
@@ -541,7 +597,7 @@
   }
 
   function setTool(tool) {
-    if (tool !== 'rectangle' && tool !== 'ellipse' && tool !== 'line' && tool !== 'arrow' && tool !== 'text') return;
+    if (tool !== 'rectangle' && tool !== 'ellipse' && tool !== 'line' && tool !== 'arrow' && tool !== 'highlighter' && tool !== 'text') return;
     if (activeTextInput && tool !== 'text') {
       commitActiveText();
     }
@@ -550,6 +606,21 @@
       btn.classList.toggle('active', btn.dataset.tool === tool);
     });
     canvas.classList.toggle('tool-text', tool === 'text');
+    canvas.classList.toggle('tool-highlighter', tool === 'highlighter');
+
+    if (opacityControl) {
+      opacityControl.classList.toggle('highlight-active', tool === 'highlighter');
+    }
+
+    // If switching to highlighter and currentColor is still initial red default, switch to classic yellow
+    if (tool === 'highlighter' && currentColor === '#ef4444') {
+      const yellowBtn = document.querySelector('.color-btn[data-color="#eab308"]');
+      if (yellowBtn) {
+        colorBtns.forEach(b => b.classList.remove('active'));
+        yellowBtn.classList.add('active');
+        currentColor = '#eab308';
+      }
+    }
   }
 
   // Active Text Annotation Operations
@@ -700,6 +771,18 @@
     // Map coordinate relative to screenshot image
     startY = coords.y - bannerHeight;
     isDrawing = true;
+
+    if (currentTool === 'highlighter') {
+      currentHighlighterPoints = [{ x: startX, y: startY }];
+      dragPreviewShape = {
+        type: 'highlighter',
+        points: [...currentHighlighterPoints],
+        color: currentColor,
+        stroke: getHighlighterStroke(currentStroke),
+        opacity: currentOpacity
+      };
+      render();
+    }
   }
 
   function onMouseMove(e) {
@@ -762,6 +845,37 @@
         color: currentColor,
         stroke: currentStroke
       };
+    } else if (currentTool === 'highlighter') {
+      let ptX = currentX;
+      let ptY = currentY;
+
+      if (e.shiftKey) {
+        // Shift key locks highlighter to straight horizontal (or vertical) axis across text
+        const dx = Math.abs(currentX - startX);
+        const dy = Math.abs(currentY - startY);
+        if (dx >= dy) {
+          ptY = startY; // Clean horizontal highlight across text
+        } else {
+          ptX = startX; // Clean vertical highlight
+        }
+        currentHighlighterPoints = [
+          { x: startX, y: startY },
+          { x: ptX, y: ptY }
+        ];
+      } else {
+        const lastPt = currentHighlighterPoints[currentHighlighterPoints.length - 1];
+        if (!lastPt || Math.hypot(ptX - lastPt.x, ptY - lastPt.y) >= 2) {
+          currentHighlighterPoints.push({ x: ptX, y: ptY });
+        }
+      }
+
+      dragPreviewShape = {
+        type: 'highlighter',
+        points: [...currentHighlighterPoints],
+        color: currentColor,
+        stroke: getHighlighterStroke(currentStroke),
+        opacity: currentOpacity
+      };
     }
 
     render();
@@ -780,6 +894,10 @@
         if (length > 5) {
           isValid = true;
         }
+      } else if (dragPreviewShape.type === 'highlighter') {
+        if (dragPreviewShape.points && dragPreviewShape.points.length >= 1) {
+          isValid = true;
+        }
       }
 
       if (isValid) {
@@ -789,6 +907,7 @@
     }
 
     dragPreviewShape = null;
+    currentHighlighterPoints = [];
     render();
   }
 
@@ -849,7 +968,7 @@
 
     const isCtrlOrMeta = e.ctrlKey || e.metaKey;
 
-    // Tool shortcuts: R for Rectangle, O for Ellipse, L for Line, A for Arrow, T for Text (when no modifier is held)
+    // Tool shortcuts: R for Rectangle, O for Ellipse, L for Line, A for Arrow, H for Highlighter, T for Text
     if (!isCtrlOrMeta && !e.altKey && !e.shiftKey) {
       if (e.key.toLowerCase() === 'r') {
         setTool('rectangle');
@@ -862,6 +981,9 @@
         return;
       } else if (e.key.toLowerCase() === 'a') {
         setTool('arrow');
+        return;
+      } else if (e.key.toLowerCase() === 'h') {
+        setTool('highlighter');
         return;
       } else if (e.key.toLowerCase() === 't') {
         setTool('text');
