@@ -10,8 +10,8 @@ Main files: `editor/editor.js`, `editor/editor.html`, `editor/editor.css`.
 - **Done when:** both shapes can be drawn, undone and copied.
 
 ## Day 2 (Wed Oct 14): Highlighter
-- [ ] Add Highlighter tool (`H`) with a semi-transparent wide stroke
-- [ ] Add an opacity setting
+- [x] Add Highlighter tool (`H`) with a semi-transparent wide stroke
+- [x] Add an opacity setting
 - **Done when:** text under the highlight stays readable.
 
 ## Day 3 (Thu Oct 15): Blur / pixelate redaction

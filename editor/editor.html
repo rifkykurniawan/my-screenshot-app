@@ -53,6 +53,13 @@
           </svg>
           <span>Arrow</span>
         </button>
+        <button class="tool-btn" data-tool="highlighter" title="Highlighter Tool (H)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m9 11-6 6v3h3l6-6"></path>
+            <path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"></path>
+          </svg>
+          <span>Highlight</span>
+        </button>
         <button class="tool-btn" data-tool="text" title="Text Tool (T)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="4 7 4 4 20 4 20 7"></polyline>
@@ -96,6 +103,19 @@
         <button class="stroke-btn" data-stroke="11" title="Bold (11px)">
           <span class="stroke-dot" style="width: 13px; height: 13px;"></span>
         </button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- Opacity Setting -->
+      <div class="opacity-control" id="opacity-control" title="Highlighter Opacity">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"></path>
+        </svg>
+        <span class="opacity-label">Opacity</span>
+        <input type="range" id="opacity-slider" min="15" max="85" step="5" value="40" class="opacity-slider" title="Adjust Opacity (15% - 85%)">
+        <span id="opacity-val" class="opacity-badge">40%</span>
       </div>
 
       <div class="toolbar-divider"></div>
