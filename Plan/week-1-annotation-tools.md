@@ -15,9 +15,9 @@ Main files: `editor/editor.js`, `editor/editor.html`, `editor/editor.css`.
 - **Done when:** text under the highlight stays readable.
 
 ## Day 3 (Thu Oct 15): Blur / pixelate redaction
-- [ ] Add Blur tool (`B`) drawn as a region
-- [ ] Implement pixelate on the base image (sample blocks)
-- [ ] Add a blur/pixelate toggle and an intensity slider
+- [x] Add Blur tool (`B`) drawn as a region
+- [x] Implement pixelate on the base image (sample blocks)
+- [x] Add a blur/pixelate toggle and an intensity slider
 - **Done when:** sensitive text is unreadable in the copied image.
 
 ## Day 4 (Fri Oct 16): Numbered step markers

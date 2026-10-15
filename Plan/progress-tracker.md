@@ -5,7 +5,7 @@ Mark `[x]` when a day is done.
 ## Week 1: Annotation tools (Oct 13-19)
 - [x] Day 1 (Tue Oct 13): Line and ellipse
 - [x] Day 2 (Wed Oct 14): Highlighter
-- [ ] Day 3 (Thu Oct 15): Blur / pixelate
+- [x] Day 3 (Thu Oct 15): Blur / pixelate
 - [ ] Day 4 (Fri Oct 16): Numbered markers
 - [ ] Day 5 (Sat Oct 17): Select, move, resize, delete
 - [ ] Day 6 (Sun Oct 18): Sunday rest / catch-up
