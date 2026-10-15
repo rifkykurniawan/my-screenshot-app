@@ -42,15 +42,17 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1.25rem;
+  padding: 0 1rem;
   z-index: 50;
-  gap: 1rem;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
+  flex-shrink: 0;
 }
 
 .brand-icon {
@@ -70,6 +72,7 @@ body {
   font-weight: 700;
   letter-spacing: -0.01em;
   color: #f1f5f9;
+  white-space: nowrap;
 }
 
 .badge-dimension {
@@ -80,17 +83,27 @@ body {
   border: 1px solid var(--border-color);
   padding: 3px 8px;
   border-radius: 6px;
+  white-space: nowrap;
 }
 
 /* Toolbar Controls */
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.55rem;
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid var(--border-color);
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: 12px;
+  min-width: 0;
+  flex-shrink: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.toolbar::-webkit-scrollbar {
+  display: none;
 }
 
 .tool-selector {
@@ -101,6 +114,7 @@ body {
   padding: 2px;
   border-radius: 9px;
   border: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
 }
 
 .tool-btn {
@@ -141,7 +155,8 @@ body {
 .color-palette {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  flex-shrink: 0;
 }
 
 .color-btn {
@@ -153,6 +168,7 @@ body {
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
   position: relative;
+  flex-shrink: 0;
 }
 
 .color-btn:hover {
@@ -175,6 +191,7 @@ body {
   overflow: hidden;
   border: 1px dashed rgba(255, 255, 255, 0.3);
   transition: border-color 0.15s;
+  flex-shrink: 0;
 }
 
 .custom-color-label:hover {
@@ -204,6 +221,7 @@ body {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
 }
 
 .stroke-btn {
@@ -218,6 +236,7 @@ body {
   justify-content: center;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
 }
 
 .stroke-btn:hover {
@@ -236,9 +255,21 @@ body {
   display: inline-block;
 }
 
+/* Tool Context Group (Dynamic highlighter opacity and blur redaction) */
+.tool-context-group {
+  display: none;
+  align-items: center;
+  gap: 0.55rem;
+  flex-shrink: 0;
+}
+
+.tool-context-group.active {
+  display: flex;
+}
+
 /* Opacity Setting */
 .opacity-control {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 7px;
   padding: 3px 8px;
@@ -249,8 +280,8 @@ body {
   transition: all 0.2s ease;
 }
 
-.opacity-control:hover,
 .opacity-control.highlight-active {
+  display: flex;
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(56, 189, 248, 0.35);
   color: #e2e8f0;
@@ -263,7 +294,7 @@ body {
   display: none;
 }
 
-@media (min-width: 1360px) {
+@media (min-width: 1450px) {
   .opacity-label {
     display: inline;
   }
@@ -272,7 +303,7 @@ body {
 .opacity-slider {
   -webkit-appearance: none;
   appearance: none;
-  width: 64px;
+  width: 52px;
   height: 5px;
   background: rgba(255, 255, 255, 0.18);
   border-radius: 4px;
@@ -324,7 +355,7 @@ body {
 
 /* Redaction / Blur Controls */
 .blur-controls {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 8px;
   padding: 3px 8px;
@@ -335,8 +366,8 @@ body {
   transition: all 0.2s ease;
 }
 
-.blur-controls:hover,
 .blur-controls.blur-active {
+  display: flex;
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(56, 189, 248, 0.35);
   color: #e2e8f0;
@@ -512,11 +543,15 @@ body {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
 }
 
 .btn-icon {
   width: 30px;
   height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  flex-shrink: 0;
   border-radius: 8px;
   background: transparent;
   border: 1px solid transparent;
@@ -544,6 +579,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 .btn-primary {
@@ -703,22 +739,49 @@ body {
   to { transform: rotate(360deg); }
 }
 
-/* Responsive collapse for toolbar buttons */
-@media (max-width: 1200px) {
+/* Responsive adjustments to guarantee zero toolbar truncation */
+@media (max-width: 1650px) {
+  .tool-btn span {
+    display: none;
+  }
+  .tool-btn {
+    padding: 5px 8px;
+  }
+}
+
+@media (max-width: 1350px) {
+  .badge-dimension {
+    display: none;
+  }
   .mode-btn span {
     display: none;
   }
   .mode-btn {
     padding: 4px 6px;
   }
+  .intensity-label,
+  .opacity-label {
+    display: none !important;
+  }
 }
 
-@media (max-width: 1100px) {
-  .tool-btn span {
+@media (max-width: 1150px) {
+  .kbd-hint {
     display: none;
   }
-  .tool-btn {
-    padding: 6px 8px;
+  .btn-primary {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 950px) {
+  .brand-title {
+    display: none;
+  }
+  .app-header {
+    padding: 0 0.5rem;
+    gap: 0.5rem;
   }
 }
 

@@ -17,6 +17,7 @@
   const opacityControl = document.getElementById('opacity-control');
   const opacitySlider = document.getElementById('opacity-slider');
   const opacityVal = document.getElementById('opacity-val');
+  const toolContextGroup = document.getElementById('tool-context-group');
   const blurControls = document.getElementById('blur-controls');
   const redactModeBtns = document.querySelectorAll('.mode-btn');
   const blurIntensitySlider = document.getElementById('blur-intensity-slider');
@@ -61,6 +62,7 @@
 
   async function init() {
     setupEventListeners();
+    setTool(currentTool);
     await loadScreenshot();
   }
 
@@ -788,6 +790,10 @@
     });
     canvas.classList.toggle('tool-text', tool === 'text');
     canvas.classList.toggle('tool-highlighter', tool === 'highlighter');
+
+    if (toolContextGroup) {
+      toolContextGroup.classList.toggle('active', tool === 'highlighter' || tool === 'blur');
+    }
 
     if (opacityControl) {
       opacityControl.classList.toggle('highlight-active', tool === 'highlighter');
