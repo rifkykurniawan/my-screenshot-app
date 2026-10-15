@@ -17,6 +17,10 @@
   const opacityControl = document.getElementById('opacity-control');
   const opacitySlider = document.getElementById('opacity-slider');
   const opacityVal = document.getElementById('opacity-val');
+  const blurControls = document.getElementById('blur-controls');
+  const redactModeBtns = document.querySelectorAll('.mode-btn');
+  const blurIntensitySlider = document.getElementById('blur-intensity-slider');
+  const blurIntensityVal = document.getElementById('blur-intensity-val');
   const toggleUrlBar = document.getElementById('toggle-url-bar');
   const btnUndo = document.getElementById('btn-undo');
   const btnRedo = document.getElementById('btn-redo');
@@ -24,10 +28,12 @@
   const btnCopy = document.getElementById('btn-copy');
 
   // Drawing & State
-  let currentTool = 'rectangle'; // 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'highlighter' | 'text'
+  let currentTool = 'rectangle'; // 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'highlighter' | 'blur' | 'text'
   let currentColor = '#ef4444'; // Crimson Red default
   let currentStroke = 4;        // 4px default
   let currentOpacity = 0.4;     // 40% default semi-transparent opacity for highlighter
+  let currentRedactMode = 'pixelate'; // 'pixelate' | 'blur'
+  let currentRedactIntensity = 3;      // 1 to 5 (default: 3)
   let currentHighlighterPoints = [];
   let showUrlBar = true;
   let isDrawing = false;
@@ -148,7 +154,7 @@
 
     tctx.font = '16px system-ui, sans-serif';
     tctx.fillStyle = '#94a3b8';
-    tctx.fillText('Notice the URL bar above! Draw shapes, lines, arrows, highlights, or text, then Copy to Clipboard.', testCanvas.width / 2, testCanvas.height / 2 + 20);
+    tctx.fillText('Notice the URL bar above! Draw shapes, lines, arrows, highlights, blur/pixelate, or text, then Copy.', testCanvas.width / 2, testCanvas.height / 2 + 20);
 
     baseImage = testCanvas;
     render();
@@ -185,12 +191,12 @@
 
     // 3. Draw Committed Shapes
     for (const shape of shapes) {
-      drawShape(shape, bannerHeight);
+      drawShape(shape, bannerHeight, false);
     }
 
     // 4. Draw Live Dragging Preview Shape
     if (dragPreviewShape) {
-      drawShape(dragPreviewShape, bannerHeight);
+      drawShape(dragPreviewShape, bannerHeight, true);
     }
 
     // Update Dimensions Badge
@@ -320,7 +326,7 @@
   }
 
   // Dispatcher for drawing any shape
-  function drawShape(shape, bannerOffset = 0) {
+  function drawShape(shape, bannerOffset = 0, isPreview = false) {
     if (!shape) return;
     if (shape.type === 'rectangle') {
       drawRectangle(shape.x, shape.y + bannerOffset, shape.w, shape.h, shape.color, shape.stroke);
@@ -332,9 +338,158 @@
       drawArrow(shape.x1, shape.y1 + bannerOffset, shape.x2, shape.y2 + bannerOffset, shape.color, shape.stroke);
     } else if (shape.type === 'highlighter') {
       drawHighlighter(shape.points, bannerOffset, shape.color, shape.stroke, shape.opacity);
+    } else if (shape.type === 'blur') {
+      drawRedaction(shape.x, shape.y + bannerOffset, shape.w, shape.h, shape.mode, shape.intensity, isPreview);
     } else if (shape.type === 'text') {
       drawText(shape.text, shape.x, shape.y + bannerOffset, shape.color, shape.fontSize);
     }
+  }
+
+  // Cached offscreen canvas for blur & image sampling
+  let offscreenCanvas = null;
+  let offscreenCtx = null;
+  function getOffscreenCanvas(w, h) {
+    if (!offscreenCanvas) {
+      offscreenCanvas = document.createElement('canvas');
+      offscreenCtx = offscreenCanvas.getContext('2d');
+    }
+    if (offscreenCanvas.width < w || offscreenCanvas.height < h) {
+      offscreenCanvas.width = Math.max(offscreenCanvas.width, w);
+      offscreenCanvas.height = Math.max(offscreenCanvas.height, h);
+    }
+    return { canvas: offscreenCanvas, ctx: offscreenCtx };
+  }
+
+  function getPixelateBlockSize(intensity) {
+    switch (intensity) {
+      case 1: return 8;
+      case 2: return 12;
+      case 3: return 18;
+      case 4: return 26;
+      case 5: return 36;
+      default: return 18;
+    }
+  }
+
+  function getBlurRadius(intensity) {
+    switch (intensity) {
+      case 1: return 6;
+      case 2: return 10;
+      case 3: return 16;
+      case 4: return 24;
+      case 5: return 34;
+      default: return 16;
+    }
+  }
+
+  // Redaction renderer: executes pixelate or smooth blur on base image
+  function drawRedaction(x, y, w, h, mode = 'pixelate', intensity = 3, isPreview = false) {
+    const rx = Math.max(0, Math.floor(x));
+    const ry = Math.max(0, Math.floor(y));
+    const right = Math.min(canvas.width, Math.ceil(x + w));
+    const bottom = Math.min(canvas.height, Math.ceil(y + h));
+    const rw = right - rx;
+    const rh = bottom - ry;
+    if (rw <= 0 || rh <= 0) return;
+
+    if (mode === 'blur') {
+      drawSmoothBlur(rx, ry, rw, rh, getBlurRadius(intensity));
+    } else {
+      drawPixelate(rx, ry, rw, rh, getPixelateBlockSize(intensity));
+    }
+
+    // Draw live drag dashed boundary feedback
+    if (isPreview) {
+      ctx.save();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(rx, ry, rw, rh);
+      ctx.restore();
+    }
+  }
+
+  // Sample blocks and average RGB colors to pixelate region
+  function drawPixelate(rx, ry, rw, rh, blockSize) {
+    const imgData = ctx.getImageData(rx, ry, rw, rh);
+    const data = imgData.data;
+
+    for (let by = 0; by < rh; by += blockSize) {
+      const blockH = Math.min(blockSize, rh - by);
+      for (let bx = 0; bx < rw; bx += blockSize) {
+        const blockW = Math.min(blockSize, rw - bx);
+
+        let rSum = 0;
+        let gSum = 0;
+        let bSum = 0;
+        let aSum = 0;
+        let count = 0;
+
+        for (let py = 0; py < blockH; py++) {
+          for (let px = 0; px < blockW; px++) {
+            const idx = ((by + py) * rw + (bx + px)) * 4;
+            rSum += data[idx];
+            gSum += data[idx + 1];
+            bSum += data[idx + 2];
+            aSum += data[idx + 3];
+            count++;
+          }
+        }
+
+        const rAvg = Math.round(rSum / count);
+        const gAvg = Math.round(gSum / count);
+        const bAvg = Math.round(bSum / count);
+        const aAvg = Math.round(aSum / count);
+
+        for (let py = 0; py < blockH; py++) {
+          for (let px = 0; px < blockW; px++) {
+            const idx = ((by + py) * rw + (bx + px)) * 4;
+            data[idx] = rAvg;
+            data[idx + 1] = gAvg;
+            data[idx + 2] = bAvg;
+            data[idx + 3] = aAvg;
+          }
+        }
+      }
+    }
+
+    ctx.putImageData(imgData, rx, ry);
+  }
+
+  // Smooth Gaussian Blur with edge padding to avoid transparent border bleed
+  function drawSmoothBlur(rx, ry, rw, rh, blurRadius) {
+    const pad = Math.ceil(blurRadius * 2);
+    const srcX = Math.max(0, rx - pad);
+    const srcY = Math.max(0, ry - pad);
+    const srcRight = Math.min(canvas.width, rx + rw + pad);
+    const srcBottom = Math.min(canvas.height, ry + rh + pad);
+    const srcW = srcRight - srcX;
+    const srcH = srcBottom - srcY;
+
+    if (srcW <= 0 || srcH <= 0) return;
+
+    const { canvas: offCanvas, ctx: offCtx } = getOffscreenCanvas(srcW, srcH);
+    offCtx.clearRect(0, 0, srcW, srcH);
+    offCtx.drawImage(canvas, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(rx, ry, rw, rh);
+    ctx.clip();
+    if ('filter' in ctx) {
+      ctx.filter = `blur(${blurRadius}px)`;
+      ctx.drawImage(offCanvas, 0, 0, srcW, srcH, srcX, srcY, srcW, srcH);
+    } else {
+      // Hardware-independent downscale & upscale fallback
+      const scale = Math.max(0.1, 1 / (blurRadius / 2));
+      const downW = Math.max(2, Math.round(srcW * scale));
+      const downH = Math.max(2, Math.round(srcH * scale));
+      const { canvas: downCanvas, ctx: downCtx } = getOffscreenCanvas(downW, downH);
+      downCtx.drawImage(offCanvas, 0, 0, srcW, srcH, 0, 0, downW, downH);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(downCanvas, 0, 0, downW, downH, srcX, srcY, srcW, srcH);
+    }
+    ctx.restore();
   }
 
   // Helper: Draw semi-transparent wide stroke highlighter
@@ -569,6 +724,32 @@
       });
     }
 
+    // Redaction Mode Toggle (Pixelate vs Blur)
+    redactModeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        redactModeBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentRedactMode = btn.dataset.mode;
+        if (currentTool !== 'blur') {
+          setTool('blur');
+        }
+      });
+    });
+
+    // Redaction Intensity Slider
+    if (blurIntensitySlider) {
+      blurIntensitySlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        currentRedactIntensity = val;
+        if (blurIntensityVal) {
+          blurIntensityVal.textContent = val;
+        }
+        if (currentTool !== 'blur') {
+          setTool('blur');
+        }
+      });
+    }
+
     // Toggle URL Bar
     if (toggleUrlBar) {
       toggleUrlBar.addEventListener('change', (e) => {
@@ -597,7 +778,7 @@
   }
 
   function setTool(tool) {
-    if (tool !== 'rectangle' && tool !== 'ellipse' && tool !== 'line' && tool !== 'arrow' && tool !== 'highlighter' && tool !== 'text') return;
+    if (tool !== 'rectangle' && tool !== 'ellipse' && tool !== 'line' && tool !== 'arrow' && tool !== 'highlighter' && tool !== 'blur' && tool !== 'text') return;
     if (activeTextInput && tool !== 'text') {
       commitActiveText();
     }
@@ -610,6 +791,10 @@
 
     if (opacityControl) {
       opacityControl.classList.toggle('highlight-active', tool === 'highlighter');
+    }
+
+    if (blurControls) {
+      blurControls.classList.toggle('blur-active', tool === 'blur');
     }
 
     // If switching to highlighter and currentColor is still initial red default, switch to classic yellow
@@ -793,12 +978,12 @@
     const currentX = coords.x;
     const currentY = coords.y - bannerHeight;
 
-    if (currentTool === 'rectangle' || currentTool === 'ellipse') {
+    if (currentTool === 'rectangle' || currentTool === 'ellipse' || currentTool === 'blur') {
       let rw = Math.abs(currentX - startX);
       let rh = Math.abs(currentY - startY);
 
       if (e.shiftKey) {
-        // Holding Shift constrains to 1:1 aspect ratio (circle for ellipse, square for rectangle)
+        // Holding Shift constrains to 1:1 aspect ratio (circle for ellipse, square for rectangle/blur)
         const size = Math.max(rw, rh);
         rw = size;
         rh = size;
@@ -809,15 +994,27 @@
       const rx = currentX >= startX ? startX : startX - rw;
       const ry = currentY >= startY ? startY : startY - rh;
 
-      dragPreviewShape = {
-        type: currentTool,
-        x: rx,
-        y: ry,
-        w: rw,
-        h: rh,
-        color: currentColor,
-        stroke: currentStroke
-      };
+      if (currentTool === 'blur') {
+        dragPreviewShape = {
+          type: 'blur',
+          mode: currentRedactMode,
+          intensity: currentRedactIntensity,
+          x: rx,
+          y: ry,
+          w: rw,
+          h: rh
+        };
+      } else {
+        dragPreviewShape = {
+          type: currentTool,
+          x: rx,
+          y: ry,
+          w: rw,
+          h: rh,
+          color: currentColor,
+          stroke: currentStroke
+        };
+      }
     } else if (currentTool === 'arrow' || currentTool === 'line') {
       let endX = currentX;
       let endY = currentY;
@@ -887,7 +1084,7 @@
 
     if (dragPreviewShape) {
       let isValid = false;
-      if ((dragPreviewShape.type === 'rectangle' || dragPreviewShape.type === 'ellipse') && dragPreviewShape.w > 3 && dragPreviewShape.h > 3) {
+      if ((dragPreviewShape.type === 'rectangle' || dragPreviewShape.type === 'ellipse' || dragPreviewShape.type === 'blur') && dragPreviewShape.w > 3 && dragPreviewShape.h > 3) {
         isValid = true;
       } else if (dragPreviewShape.type === 'arrow' || dragPreviewShape.type === 'line') {
         const length = Math.hypot(dragPreviewShape.x2 - dragPreviewShape.x1, dragPreviewShape.y2 - dragPreviewShape.y1);
@@ -968,7 +1165,7 @@
 
     const isCtrlOrMeta = e.ctrlKey || e.metaKey;
 
-    // Tool shortcuts: R for Rectangle, O for Ellipse, L for Line, A for Arrow, H for Highlighter, T for Text
+    // Tool shortcuts: R for Rectangle, O for Ellipse, L for Line, A for Arrow, H for Highlighter, B for Blur, T for Text
     if (!isCtrlOrMeta && !e.altKey && !e.shiftKey) {
       if (e.key.toLowerCase() === 'r') {
         setTool('rectangle');
@@ -984,6 +1181,9 @@
         return;
       } else if (e.key.toLowerCase() === 'h') {
         setTool('highlighter');
+        return;
+      } else if (e.key.toLowerCase() === 'b') {
+        setTool('blur');
         return;
       } else if (e.key.toLowerCase() === 't') {
         setTool('text');
