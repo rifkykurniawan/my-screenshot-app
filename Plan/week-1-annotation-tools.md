@@ -21,8 +21,8 @@ Main files: `editor/editor.js`, `editor/editor.html`, `editor/editor.css`.
 - **Done when:** sensitive text is unreadable in the copied image.
 
 ## Day 4 (Fri Oct 16): Numbered step markers
-- [ ] Add Step tool (`N`) that places circles numbered 1, 2, 3...
-- [ ] Auto-increment, and renumber on undo
+- [x] Add Step tool (`N`) that places circles numbered 1, 2, 3...
+- [x] Auto-increment, and renumber on undo
 - **Done when:** markers are legible at all stroke sizes.
 
 ## Day 5 (Sat Oct 17): Select, move, resize, delete
