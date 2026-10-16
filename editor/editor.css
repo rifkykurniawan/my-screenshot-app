@@ -654,6 +654,10 @@ body {
   cursor: text;
 }
 
+#screenshot-canvas.tool-step {
+  cursor: crosshair;
+}
+
 /* Inline Text Annotation Input */
 .canvas-text-editor {
   position: absolute;

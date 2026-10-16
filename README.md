@@ -11,11 +11,12 @@ A lightweight, productivity-focused Chrome extension for capturing and annotatin
   - **Include DevTools**: Full Chrome window capture including inspect element / DevTools panel and browser bar (`Alt+Shift+W`).
 - **DevTools / Inspect Element Capture**: Captures the complete browser window with docked developer tools (Console, Network, Elements, etc.) without cropping.
 - **Top URL & Timestamp Header**: Automatically appends a clean browser-style top banner containing the source page URL and capture timestamp (YYYY-MM-DD HH:MM:SS) for viewport captures. Includes an on/off toggle in the toolbar.
-- **Annotation Tools (Rectangle, Ellipse, Line, Arrow, Highlight, Blur, Text)**: 
+- **Annotation Tools (Rectangle, Ellipse, Line, Arrow, Step, Highlight, Blur, Text)**: 
   - **Rectangle Tool (`R`)**: Draw outline rectangles smoothly to highlight key areas, text, or elements. Hold `Shift` to constrain to a square.
   - **Ellipse Tool (`O`)**: Draw clean circular or oval highlights around UI controls. Hold `Shift` to constrain to a perfect circle.
   - **Line Tool (`L`)**: Draw straight rule lines to separate or underline content. Hold `Shift` to snap angle in 45° increments.
   - **Arrow Tool (`A`)**: Draw directional arrows with crisp chevrons to point directly to issues or buttons. Hold `Shift` to snap angle in 45° increments.
+  - **Step Marker Tool (`N`)**: Place sequentially numbered circles (1, 2, 3...) to document workflows step-by-step. Features automatic incrementing, renumbering on undo, and maximum legibility across all stroke sizes.
   - **Highlighter Tool (`H`)**: Semi-transparent, wide-stroke marker with adjustable opacity (15%–85%). Hold `Shift` to snap to a straight horizontal line.
   - **Blur / Redact Tool (`B`)**: Redact sensitive data by dragging rectangular regions with Pixelate (block sampling) or smooth Gaussian Blur modes and a 5-level intensity slider. Hold `Shift` to constrain to a square.
   - **Text Tool (`T`)**: Click anywhere on the screenshot to type custom text annotations with auto-resizing, live colors, and clear drop-shadow legibility.
@@ -75,6 +76,7 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 | `O` | Select Ellipse tool |
 | `L` | Select Line tool |
 | `A` | Select Arrow tool |
+| `N` | Select Step marker tool (Click to place numbered step: 1, 2, 3...) |
 | `H` | Select Highlighter tool (Hold `Shift` to snap straight horizontal highlight) |
 | `B` | Select Blur / Redact tool (Hold `Shift` to constrain to square region) |
 | `T` | Select Text tool |

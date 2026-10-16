@@ -29,7 +29,7 @@
   const btnCopy = document.getElementById('btn-copy');
 
   // Drawing & State
-  let currentTool = 'rectangle'; // 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'highlighter' | 'blur' | 'text'
+  let currentTool = 'rectangle'; // 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'step' | 'highlighter' | 'blur' | 'text'
   let currentColor = '#ef4444'; // Crimson Red default
   let currentStroke = 4;        // 4px default
   let currentOpacity = 0.4;     // 40% default semi-transparent opacity for highlighter
@@ -342,6 +342,8 @@
       drawHighlighter(shape.points, bannerOffset, shape.color, shape.stroke, shape.opacity);
     } else if (shape.type === 'blur') {
       drawRedaction(shape.x, shape.y + bannerOffset, shape.w, shape.h, shape.mode, shape.intensity, isPreview);
+    } else if (shape.type === 'step') {
+      drawStepMarker(shape, bannerOffset, isPreview);
     } else if (shape.type === 'text') {
       drawText(shape.text, shape.x, shape.y + bannerOffset, shape.color, shape.fontSize);
     }
@@ -566,6 +568,119 @@
     }
   }
 
+  // Helper: Numbered Step Markers
+  function getNextStepNumber(shapesList = shapes) {
+    return shapesList.filter(s => s.type === 'step').length + 1;
+  }
+
+  function renumberSteps(shapesList = shapes) {
+    let count = 1;
+    for (const shape of shapesList) {
+      if (shape.type === 'step') {
+        shape.number = count++;
+      }
+    }
+  }
+
+  // Determine brightness for high contrast text & rings (perceived luminance)
+  function isBrightColor(hex) {
+    if (!hex || typeof hex !== 'string') return false;
+    let c = hex.replace('#', '');
+    if (c.length === 3) c = c.split('').map(x => x + x).join('');
+    const r = parseInt(c.substring(0, 2), 16) || 0;
+    const g = parseInt(c.substring(2, 4), 16) || 0;
+    const b = parseInt(c.substring(4, 6), 16) || 0;
+    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+    return lum > 175;
+  }
+
+  // Sizing metrics for step markers across all stroke sizes (2, 4, 7, 11)
+  function getStepMetrics(stroke) {
+    switch (stroke) {
+      case 2:
+        return { radius: 15, fontSize: 14, ringWidth: 2 };
+      case 4:
+        return { radius: 20, fontSize: 18, ringWidth: 2.5 };
+      case 7:
+        return { radius: 26, fontSize: 23, ringWidth: 3.5 };
+      case 11:
+        return { radius: 34, fontSize: 30, ringWidth: 4.5 };
+      default: {
+        const r = Math.max(15, Math.round(stroke * 3.2));
+        return { radius: r, fontSize: Math.round(r * 0.9), ringWidth: Math.max(2, stroke * 0.35) };
+      }
+    }
+  }
+
+  // Render high-legibility numbered step circle marker
+  function drawStepMarker(shape, bannerOffset = 0, isPreview = false) {
+    const x = shape.x;
+    const y = shape.y + bannerOffset;
+    const stroke = shape.stroke || 4;
+    const metrics = getStepMetrics(stroke);
+    const color = shape.color || '#ef4444';
+    const isBright = isBrightColor(color);
+    const text = String(shape.number || 1);
+
+    ctx.save();
+
+    if (isPreview) {
+      ctx.globalAlpha = 0.9;
+    }
+
+    // Outer drop shadow for clear separation on light/dark/busy backgrounds
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+    ctx.shadowBlur = Math.max(4, Math.round(metrics.radius * 0.25));
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = Math.max(1.5, Math.round(metrics.radius * 0.1));
+
+    // 1. Solid filled circle
+    ctx.beginPath();
+    ctx.arc(x, y, metrics.radius, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+
+    // Reset shadow so border ring and text remain crisp
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+
+    // 2. High-contrast border ring
+    ctx.lineWidth = metrics.ringWidth;
+    ctx.strokeStyle = isBright ? 'rgba(15, 23, 42, 0.55)' : '#ffffff';
+    ctx.stroke();
+
+    // 3. Dynamic font scaling for 1, 2, or 3+ digit numbers
+    let fontSize = metrics.fontSize;
+    ctx.font = `700 ${fontSize}px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif`;
+    const textWidth = ctx.measureText(text).width;
+    const maxAllowedWidth = metrics.radius * 1.45;
+    if (textWidth > maxAllowedWidth) {
+      fontSize = Math.floor(fontSize * (maxAllowedWidth / textWidth));
+      ctx.font = `700 ${fontSize}px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif`;
+    }
+
+    // 4. Centered number text with contrast
+    ctx.fillStyle = isBright ? '#0f172a' : '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x, y);
+
+    // If live drag preview, draw subtle dashed accent ring
+    if (isPreview) {
+      ctx.beginPath();
+      ctx.arc(x, y, metrics.radius + 3.5, 0, Math.PI * 2);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    ctx.restore();
+  }
+
   // Helper: Draw single rectangle
   function drawRectangle(x, y, w, h, color, stroke) {
     ctx.save();
@@ -780,7 +895,7 @@
   }
 
   function setTool(tool) {
-    if (tool !== 'rectangle' && tool !== 'ellipse' && tool !== 'line' && tool !== 'arrow' && tool !== 'highlighter' && tool !== 'blur' && tool !== 'text') return;
+    if (tool !== 'rectangle' && tool !== 'ellipse' && tool !== 'line' && tool !== 'arrow' && tool !== 'step' && tool !== 'highlighter' && tool !== 'blur' && tool !== 'text') return;
     if (activeTextInput && tool !== 'text') {
       commitActiveText();
     }
@@ -790,6 +905,7 @@
     });
     canvas.classList.toggle('tool-text', tool === 'text');
     canvas.classList.toggle('tool-highlighter', tool === 'highlighter');
+    canvas.classList.toggle('tool-step', tool === 'step');
 
     if (toolContextGroup) {
       toolContextGroup.classList.toggle('active', tool === 'highlighter' || tool === 'blur');
@@ -963,6 +1079,20 @@
     startY = coords.y - bannerHeight;
     isDrawing = true;
 
+    if (currentTool === 'step') {
+      const stepNum = getNextStepNumber(shapes);
+      dragPreviewShape = {
+        type: 'step',
+        x: startX,
+        y: startY,
+        number: stepNum,
+        color: currentColor,
+        stroke: currentStroke
+      };
+      render();
+      return;
+    }
+
     if (currentTool === 'highlighter') {
       currentHighlighterPoints = [{ x: startX, y: startY }];
       dragPreviewShape = {
@@ -1079,6 +1209,11 @@
         stroke: getHighlighterStroke(currentStroke),
         opacity: currentOpacity
       };
+    } else if (currentTool === 'step') {
+      if (dragPreviewShape) {
+        dragPreviewShape.x = currentX;
+        dragPreviewShape.y = currentY;
+      }
     }
 
     render();
@@ -1101,10 +1236,13 @@
         if (dragPreviewShape.points && dragPreviewShape.points.length >= 1) {
           isValid = true;
         }
+      } else if (dragPreviewShape.type === 'step') {
+        isValid = true;
       }
 
       if (isValid) {
         shapes.push({ ...dragPreviewShape });
+        renumberSteps(shapes);
         commitHistory();
       }
     }
@@ -1116,7 +1254,7 @@
 
   // History Management
   function commitHistory() {
-    undoStack.push([...shapes]);
+    undoStack.push(shapes.map(s => ({ ...s })));
     if (undoStack.length > MAX_HISTORY) {
       undoStack.shift();
     }
@@ -1131,7 +1269,8 @@
     const current = undoStack.pop();
     redoStack.push(current);
 
-    shapes = [...undoStack[undoStack.length - 1]];
+    shapes = undoStack[undoStack.length - 1].map(s => ({ ...s }));
+    renumberSteps(shapes);
     render();
     updateHistoryButtons();
   }
@@ -1143,7 +1282,8 @@
     const next = redoStack.pop();
     undoStack.push(next);
 
-    shapes = [...next];
+    shapes = next.map(s => ({ ...s }));
+    renumberSteps(shapes);
     render();
     updateHistoryButtons();
   }
@@ -1193,6 +1333,9 @@
         return;
       } else if (e.key.toLowerCase() === 't') {
         setTool('text');
+        return;
+      } else if (e.key.toLowerCase() === 'n') {
+        setTool('step');
         return;
       }
     }
