@@ -11,7 +11,8 @@ A lightweight, productivity-focused Chrome extension for capturing and annotatin
   - **Include DevTools**: Full Chrome window capture including inspect element / DevTools panel and browser bar (`Alt+Shift+W`).
 - **DevTools / Inspect Element Capture**: Captures the complete browser window with docked developer tools (Console, Network, Elements, etc.) without cropping.
 - **Top URL & Timestamp Header**: Automatically appends a clean browser-style top banner containing the source page URL and capture timestamp (YYYY-MM-DD HH:MM:SS) for viewport captures. Includes an on/off toggle in the toolbar.
-- **Annotation Tools (Rectangle, Ellipse, Line, Arrow, Step, Highlight, Blur, Text)**: 
+- **Annotation Tools (Select, Rectangle, Ellipse, Line, Arrow, Step, Highlight, Blur, Text)**: 
+  - **Select & Edit Tool (`V`)**: Click any existing annotation to select it, drag to move, drag 8-point handles to resize, nudge with Arrow keys, change colors/strokes live, or press `Delete` / `Backspace` to remove. Double-click text annotations to edit inline.
   - **Rectangle Tool (`R`)**: Draw outline rectangles smoothly to highlight key areas, text, or elements. Hold `Shift` to constrain to a square.
   - **Ellipse Tool (`O`)**: Draw clean circular or oval highlights around UI controls. Hold `Shift` to constrain to a perfect circle.
   - **Line Tool (`L`)**: Draw straight rule lines to separate or underline content. Hold `Shift` to snap angle in 45° increments.
@@ -72,6 +73,7 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 | :--- | :--- |
 | `Alt + Shift + S` *(Option+Shift+S on Mac)* | Capture active viewport & open editor |
 | `Alt + Shift + W` *(Option+Shift+W on Mac)* | Capture window with DevTools & open editor |
+| `V` | Select tool (Click annotation to select, drag to move, drag handles to resize) |
 | `R` | Select Rectangle tool |
 | `O` | Select Ellipse tool |
 | `L` | Select Line tool |
@@ -79,13 +81,15 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 | `N` | Select Step marker tool (Click to place numbered step: 1, 2, 3...) |
 | `H` | Select Highlighter tool (Hold `Shift` to snap straight horizontal highlight) |
 | `B` | Select Blur / Redact tool (Hold `Shift` to constrain to square region) |
-| `T` | Select Text tool |
+| `T` | Select Text tool (Double-click existing text in Select mode to edit) |
+| `Delete` or `Backspace` | Delete selected annotation |
+| `Arrow Keys` *(+ Shift for 10px)* | Nudge selected annotation |
 | `Enter` *(while typing text)* | Commit text annotation |
 | `Shift + Enter` *(while typing text)* | Insert newline in text annotation |
 | `Ctrl + C` or `Enter` *(Cmd+C on Mac)* | Copy screenshot to clipboard & auto-close tab |
 | `Ctrl + Z` *(Cmd+Z on Mac)* | Undo last annotation |
 | `Ctrl + Y` or `Ctrl + Shift + Z` | Redo annotation |
-| `Escape` | Cancel current drawing drag or active text input |
+| `Escape` | Cancel current drawing drag, deselect annotation, or dismiss active text |
 
 > **Note**: You can customize extension keyboard shortcuts anytime by visiting `chrome://extensions/shortcuts` in your browser.
 

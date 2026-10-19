@@ -26,9 +26,9 @@ Main files: `editor/editor.js`, `editor/editor.html`, `editor/editor.css`.
 - **Done when:** markers are legible at all stroke sizes.
 
 ## Day 5 (Sat Oct 17): Select, move, resize, delete
-- [ ] Store annotations as objects (type, geometry, style)
-- [ ] Add Select tool (`V`) with hit testing
-- [ ] Add move, resize handles and `Delete` key
+- [x] Store annotations as objects (type, geometry, style)
+- [x] Add Select tool (`V`) with hit testing
+- [x] Add move, resize handles and `Delete` key
 - **Done when:** any existing annotation can be edited after drawing.
 
 ## Day 6 (Sun Oct 18): Sunday rest / catch-up
