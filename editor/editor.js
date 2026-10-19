@@ -3,7 +3,7 @@
   const canvas = document.getElementById('screenshot-canvas');
   const canvasContainer = document.getElementById('canvas-container');
   const workspace = document.getElementById('workspace');
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   const dimensionsBadge = document.getElementById('image-dimensions');
   const toast = document.getElementById('toast');
   const toastTitle = document.getElementById('toast-title');
@@ -393,7 +393,7 @@
   function getOffscreenCanvas(w, h) {
     if (!offscreenCanvas) {
       offscreenCanvas = document.createElement('canvas');
-      offscreenCtx = offscreenCanvas.getContext('2d');
+      offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
     }
     if (offscreenCanvas.width < w || offscreenCanvas.height < h) {
       offscreenCanvas.width = Math.max(offscreenCanvas.width, w);
