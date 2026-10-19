@@ -9,7 +9,7 @@ Mark `[x]` when a day is done.
 - [x] Day 4 (Fri Oct 16): Numbered markers
 - [x] Day 5 (Sat Oct 17): Select, move, resize, delete
 - [ ] Day 6 (Sun Oct 18): Sunday rest / catch-up
-- [ ] Day 7 (Mon Oct 19): Eraser, clear all, review (M1)
+- [x] Day 7 (Mon Oct 19): Eraser, clear all, review (M1)
 
 ## Week 2: Capture modes (Oct 20-26)
 - [ ] Day 8 (Tue Oct 20): Crop
@@ -43,7 +43,7 @@ Mark `[x]` when a day is done.
 - [ ] Day 30 (Wed Nov 11): Testing and v2.0 release (M5)
 
 ## Milestones
-- [ ] M1 Annotation tools (Day 7, Mon Oct 19)
+- [x] M1 Annotation tools (Day 7, Mon Oct 19)
 - [ ] M2 Capture modes (Day 14, Mon Oct 26)
 - [ ] M3 Export and sharing (Day 21, Mon Nov 2)
 - [ ] M4 Advanced editing (Day 28, Mon Nov 9)

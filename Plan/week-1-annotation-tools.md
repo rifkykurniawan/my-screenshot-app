@@ -34,7 +34,7 @@ Main files: `editor/editor.js`, `editor/editor.html`, `editor/editor.css`.
 ## Day 6 (Sun Oct 18): Sunday rest / catch-up
 
 ## Day 7 (Mon Oct 19): Eraser, clear all, week review (Milestone M1)
-- [ ] Add Eraser (click removes an annotation)
-- [ ] Add a "Clear all" button with undo support
-- [ ] Update README shortcuts, fix week bugs
+- [x] Add Eraser (click removes an annotation)
+- [x] Add a "Clear all" button with undo support
+- [x] Update README shortcuts, fix week bugs
 - **Done when:** Milestone M1 passes a manual test.
