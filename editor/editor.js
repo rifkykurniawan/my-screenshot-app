@@ -25,11 +25,12 @@
   const toggleUrlBar = document.getElementById('toggle-url-bar');
   const btnUndo = document.getElementById('btn-undo');
   const btnRedo = document.getElementById('btn-redo');
+  const btnDelete = document.getElementById('btn-delete');
   const btnClear = document.getElementById('btn-clear');
   const btnCopy = document.getElementById('btn-copy');
 
   // Drawing & State
-  let currentTool = 'rectangle'; // 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'step' | 'highlighter' | 'blur' | 'text'
+  let currentTool = 'rectangle'; // 'select' | 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'step' | 'highlighter' | 'blur' | 'text'
   let currentColor = '#ef4444'; // Crimson Red default
   let currentStroke = 4;        // 4px default
   let currentOpacity = 0.4;     // 40% default semi-transparent opacity for highlighter
@@ -41,6 +42,27 @@
   let startX = 0;
   let startY = 0;
   let activeTextInput = null;
+
+  // Selection and Manipulation State
+  let selectedShapeIndex = -1;
+  let dragMode = null; // 'draw' | 'move' | 'resize'
+  let activeHandle = null;
+  let dragStartCoords = { x: 0, y: 0 };
+  let shapeStartSnapshot = null;
+  let hasMovedOrResized = false;
+
+  // Deep clone helpers for shapes with nested points arrays
+  function cloneShape(s) {
+    if (!s) return s;
+    if (s.points) {
+      return { ...s, points: s.points.map(p => ({ ...p })) };
+    }
+    return { ...s };
+  }
+
+  function cloneShapes(list) {
+    return list.map(cloneShape);
+  }
 
   // Metadata
   let sourceUrl = '';
@@ -199,6 +221,11 @@
     // 4. Draw Live Dragging Preview Shape
     if (dragPreviewShape) {
       drawShape(dragPreviewShape, bannerHeight, true);
+    }
+
+    // 5. Draw Selection Handles & Bounding Box (when in select tool and shape selected)
+    if (currentTool === 'select' && selectedShapeIndex >= 0 && selectedShapeIndex < shapes.length) {
+      drawSelectionUI(shapes[selectedShapeIndex], bannerHeight);
     }
 
     // Update Dimensions Badge
@@ -772,9 +799,465 @@
     };
   }
 
+  // Hit-Testing and Geometry Helpers
+  function distToSegment(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const l2 = dx * dx + dy * dy;
+    if (l2 === 0) return Math.hypot(px - x1, py - y1);
+    let t = ((px - x1) * dx + (py - y1) * dy) / l2;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+  }
+
+  function getNormalizedBox(shape) {
+    const x = Math.min(shape.x, shape.x + shape.w);
+    const y = Math.min(shape.y, shape.y + shape.h);
+    const w = Math.abs(shape.w);
+    const h = Math.abs(shape.h);
+    return { x, y, w, h };
+  }
+
+  function getShapeBounds(shape) {
+    if (!shape) return { x: 0, y: 0, w: 0, h: 0 };
+    if (shape.type === 'rectangle' || shape.type === 'ellipse' || shape.type === 'blur') {
+      return getNormalizedBox(shape);
+    }
+    if (shape.type === 'line' || shape.type === 'arrow') {
+      const minX = Math.min(shape.x1, shape.x2);
+      const maxX = Math.max(shape.x1, shape.x2);
+      const minY = Math.min(shape.y1, shape.y2);
+      const maxY = Math.max(shape.y1, shape.y2);
+      return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+    }
+    if (shape.type === 'step') {
+      const r = getStepMetrics(shape.stroke || 4).radius;
+      return { x: shape.x - r, y: shape.y - r, w: r * 2, h: r * 2 };
+    }
+    if (shape.type === 'text') {
+      const lines = (shape.text || '').split('\n');
+      ctx.save();
+      ctx.font = `700 ${shape.fontSize || 22}px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif`;
+      let maxW = 20;
+      for (const line of lines) {
+        const m = ctx.measureText(line).width;
+        if (m > maxW) maxW = m;
+      }
+      ctx.restore();
+      const lineH = (shape.fontSize || 22) * 1.25;
+      return { x: shape.x, y: shape.y, w: maxW, h: Math.max(lineH, lines.length * lineH) };
+    }
+    if (shape.type === 'highlighter') {
+      if (!shape.points || shape.points.length === 0) return { x: 0, y: 0, w: 0, h: 0 };
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      for (const p of shape.points) {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+      }
+      const pad = (shape.stroke || 20) / 2;
+      return { x: minX - pad, y: minY - pad, w: (maxX - minX) + pad * 2, h: (maxY - minY) + pad * 2 };
+    }
+    return { x: 0, y: 0, w: 0, h: 0 };
+  }
+
+  function hitTestShape(shape, px, py) {
+    if (!shape) return false;
+    if (shape.type === 'rectangle') {
+      const b = getNormalizedBox(shape);
+      const pad = Math.max(6, (shape.stroke || 4) / 2 + 4);
+      return px >= b.x - pad && px <= b.x + b.w + pad && py >= b.y - pad && py <= b.y + b.h + pad;
+    }
+    if (shape.type === 'ellipse') {
+      const b = getNormalizedBox(shape);
+      const pad = Math.max(6, (shape.stroke || 4) / 2 + 4);
+      const rx = b.w / 2;
+      const ry = b.h / 2;
+      if (rx <= 0 || ry <= 0) return false;
+      const cx = b.x + rx;
+      const cy = b.y + ry;
+      const val = Math.pow((px - cx) / (rx + pad), 2) + Math.pow((py - cy) / (ry + pad), 2);
+      return val <= 1;
+    }
+    if (shape.type === 'blur') {
+      const b = getNormalizedBox(shape);
+      return px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h;
+    }
+    if (shape.type === 'line' || shape.type === 'arrow') {
+      const pad = Math.max(8, (shape.stroke || 4) / 2 + 5);
+      return distToSegment(px, py, shape.x1, shape.y1, shape.x2, shape.y2) <= pad;
+    }
+    if (shape.type === 'step') {
+      const r = getStepMetrics(shape.stroke || 4).radius;
+      return Math.hypot(px - shape.x, py - shape.y) <= r + 6;
+    }
+    if (shape.type === 'text') {
+      const b = getShapeBounds(shape);
+      return px >= b.x - 6 && px <= b.x + b.w + 6 && py >= b.y - 6 && py <= b.y + b.h + 6;
+    }
+    if (shape.type === 'highlighter') {
+      if (!shape.points || shape.points.length === 0) return false;
+      const pad = Math.max(10, (shape.stroke || 20) / 2 + 6);
+      if (shape.points.length === 1) {
+        return Math.hypot(px - shape.points[0].x, py - shape.points[0].y) <= pad;
+      }
+      for (let i = 0; i < shape.points.length - 1; i++) {
+        if (distToSegment(px, py, shape.points[i].x, shape.points[i].y, shape.points[i + 1].x, shape.points[i + 1].y) <= pad) {
+          return true;
+        }
+      }
+      return false;
+    }
+    return false;
+  }
+
+  function getShapeAt(px, py) {
+    for (let i = shapes.length - 1; i >= 0; i--) {
+      if (hitTestShape(shapes[i], px, py)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  function getShapeHandles(shape) {
+    if (!shape) return [];
+    if (shape.type === 'line' || shape.type === 'arrow') {
+      return [
+        { id: 'start', x: shape.x1, y: shape.y1, cursor: 'crosshair', type: 'point' },
+        { id: 'end', x: shape.x2, y: shape.y2, cursor: 'crosshair', type: 'point' }
+      ];
+    }
+    if (shape.type === 'step' || shape.type === 'text' || shape.type === 'highlighter') {
+      const b = getShapeBounds(shape);
+      return [
+        { id: 'nw', x: b.x, y: b.y, cursor: 'nwse-resize' },
+        { id: 'ne', x: b.x + b.w, y: b.y, cursor: 'nesw-resize' },
+        { id: 'se', x: b.x + b.w, y: b.y + b.h, cursor: 'nwse-resize' },
+        { id: 'sw', x: b.x, y: b.y + b.h, cursor: 'nesw-resize' }
+      ];
+    }
+    if (shape.type === 'rectangle' || shape.type === 'ellipse' || shape.type === 'blur') {
+      const b = getNormalizedBox(shape);
+      return [
+        { id: 'nw', x: b.x, y: b.y, cursor: 'nwse-resize' },
+        { id: 'n', x: b.x + b.w / 2, y: b.y, cursor: 'ns-resize' },
+        { id: 'ne', x: b.x + b.w, y: b.y, cursor: 'nesw-resize' },
+        { id: 'e', x: b.x + b.w, y: b.y + b.h / 2, cursor: 'ew-resize' },
+        { id: 'se', x: b.x + b.w, y: b.y + b.h, cursor: 'nwse-resize' },
+        { id: 's', x: b.x + b.w / 2, y: b.y + b.h, cursor: 'ns-resize' },
+        { id: 'sw', x: b.x, y: b.y + b.h, cursor: 'nesw-resize' },
+        { id: 'w', x: b.x, y: b.y + b.h / 2, cursor: 'ew-resize' }
+      ];
+    }
+    return [];
+  }
+
+  function hitTestHandles(shape, px, py) {
+    if (!shape) return null;
+    const handles = getShapeHandles(shape);
+    for (const h of handles) {
+      if (Math.hypot(px - h.x, py - h.y) <= 8.5) {
+        return h;
+      }
+    }
+    return null;
+  }
+
+  // Draw Selection Box and Transform Handles
+  function drawSelectionUI(shape, bannerOffset = 0) {
+    if (!shape) return;
+    ctx.save();
+
+    // 1. Draw Selection Outline
+    if (shape.type === 'line' || shape.type === 'arrow') {
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
+      ctx.lineWidth = Math.max(6, (shape.stroke || 4) + 6);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(shape.x1, shape.y1 + bannerOffset);
+      ctx.lineTo(shape.x2, shape.y2 + bannerOffset);
+      ctx.stroke();
+    } else if (shape.type === 'step') {
+      const r = getStepMetrics(shape.stroke || 4).radius;
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(shape.x, shape.y + bannerOffset, r + 4, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else {
+      const b = getShapeBounds(shape);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(b.x - 2, b.y + bannerOffset - 2, b.w + 4, b.h + 4);
+      ctx.setLineDash([]);
+    }
+
+    // 2. Draw Resize Handles
+    const handles = getShapeHandles(shape);
+    for (const h of handles) {
+      const hy = h.y + bannerOffset;
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 1;
+
+      if (h.type === 'point') {
+        ctx.beginPath();
+        ctx.arc(h.x, hy, 5.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#0284c7';
+        ctx.stroke();
+      } else {
+        const size = 8;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(h.x - size / 2, hy - size / 2, size, size);
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#0284c7';
+        ctx.strokeRect(h.x - size / 2, hy - size / 2, size, size);
+      }
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
+  // Selection Management
+  function selectShape(index) {
+    if (index < 0 || index >= shapes.length) {
+      selectedShapeIndex = -1;
+      updateDeleteButton();
+      render();
+      return;
+    }
+
+    selectedShapeIndex = index;
+    const shape = shapes[index];
+    updateDeleteButton();
+
+    // Synchronize toolbar with selected shape styling
+    if (shape.color) {
+      currentColor = shape.color;
+      let matched = false;
+      colorBtns.forEach(b => {
+        const matches = b.dataset.color.toLowerCase() === currentColor.toLowerCase();
+        b.classList.toggle('active', matches);
+        if (matches) matched = true;
+      });
+      if (customColorPicker) {
+        customColorPicker.value = currentColor;
+      }
+    }
+
+    if (shape.stroke) {
+      currentStroke = shape.stroke;
+      strokeBtns.forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.stroke, 10) === currentStroke);
+      });
+    }
+
+    if (shape.type === 'highlighter' && shape.opacity !== undefined) {
+      currentOpacity = shape.opacity;
+      if (opacitySlider) opacitySlider.value = Math.round(shape.opacity * 100);
+      if (opacityVal) opacityVal.textContent = `${Math.round(shape.opacity * 100)}%`;
+      if (toolContextGroup) toolContextGroup.classList.add('active');
+      if (opacityControl) opacityControl.classList.add('highlight-active');
+      if (blurControls) blurControls.classList.remove('blur-active');
+    } else if (shape.type === 'blur') {
+      if (shape.mode) {
+        currentRedactMode = shape.mode;
+        redactModeBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === shape.mode));
+      }
+      if (shape.intensity !== undefined) {
+        currentRedactIntensity = shape.intensity;
+        if (blurIntensitySlider) blurIntensitySlider.value = shape.intensity;
+        if (blurIntensityVal) blurIntensityVal.textContent = shape.intensity;
+      }
+      if (toolContextGroup) toolContextGroup.classList.add('active');
+      if (blurControls) blurControls.classList.add('blur-active');
+      if (opacityControl) opacityControl.classList.remove('highlight-active');
+    }
+
+    render();
+  }
+
+  function updateDeleteButton() {
+    if (btnDelete) {
+      btnDelete.disabled = (selectedShapeIndex < 0 || selectedShapeIndex >= shapes.length);
+    }
+  }
+
+  function deleteSelectedShape() {
+    if (selectedShapeIndex < 0 || selectedShapeIndex >= shapes.length) return;
+    const removed = shapes.splice(selectedShapeIndex, 1)[0];
+    selectedShapeIndex = -1;
+    updateDeleteButton();
+    if (removed && removed.type === 'step') {
+      renumberSteps(shapes);
+    }
+    commitHistory();
+    render();
+  }
+
+  // Move transformation helper
+  function applyMove(target, snapshot, dx, dy) {
+    if (target.type === 'rectangle' || target.type === 'ellipse' || target.type === 'blur' || target.type === 'text' || target.type === 'step') {
+      target.x = snapshot.x + dx;
+      target.y = snapshot.y + dy;
+    } else if (target.type === 'line' || target.type === 'arrow') {
+      target.x1 = snapshot.x1 + dx;
+      target.y1 = snapshot.y1 + dy;
+      target.x2 = snapshot.x2 + dx;
+      target.y2 = snapshot.y2 + dy;
+    } else if (target.type === 'highlighter') {
+      target.points = snapshot.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
+    }
+  }
+
+  // Resize transformation helper
+  function applyResize(target, snapshot, handle, dx, dy, shiftKey, currentX, currentY) {
+    const handleId = handle.id;
+
+    if (target.type === 'line' || target.type === 'arrow') {
+      if (handleId === 'start') {
+        let x1 = snapshot.x1 + dx;
+        let y1 = snapshot.y1 + dy;
+        if (shiftKey) {
+          const ldx = snapshot.x2 - x1;
+          const ldy = snapshot.y2 - y1;
+          const angle = Math.atan2(ldy, ldx);
+          const snappedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+          const dist = Math.hypot(ldx, ldy);
+          x1 = snapshot.x2 - dist * Math.cos(snappedAngle);
+          y1 = snapshot.y2 - dist * Math.sin(snappedAngle);
+        }
+        target.x1 = x1;
+        target.y1 = y1;
+      } else if (handleId === 'end') {
+        let x2 = snapshot.x2 + dx;
+        let y2 = snapshot.y2 + dy;
+        if (shiftKey) {
+          const ldx = x2 - snapshot.x1;
+          const ldy = y2 - snapshot.y1;
+          const angle = Math.atan2(ldy, ldx);
+          const snappedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+          const dist = Math.hypot(ldx, ldy);
+          x2 = snapshot.x1 + dist * Math.cos(snappedAngle);
+          y2 = snapshot.y1 + dist * Math.sin(snappedAngle);
+        }
+        target.x2 = x2;
+        target.y2 = y2;
+      }
+      return;
+    }
+
+    if (target.type === 'step') {
+      const origMetrics = getStepMetrics(snapshot.stroke || 4);
+      const origDist = origMetrics.radius * Math.SQRT2;
+      const currentDist = Math.hypot(currentX - snapshot.x, currentY - snapshot.y);
+      const scale = Math.max(0.4, Math.min(3.0, currentDist / origDist));
+      target.stroke = Math.max(2, Math.min(18, Math.round((snapshot.stroke || 4) * scale)));
+      return;
+    }
+
+    if (target.type === 'text') {
+      const bounds = getShapeBounds(snapshot);
+      const scale = Math.max(0.4, Math.min(3.5, (bounds.w + dx) / Math.max(bounds.w, 10)));
+      target.fontSize = Math.max(12, Math.min(100, Math.round((snapshot.fontSize || 22) * scale)));
+      return;
+    }
+
+    if (target.type === 'highlighter') {
+      const b = getShapeBounds(snapshot);
+      if (b.w <= 0 || b.h <= 0) return;
+      let scaleX = Math.max(0.2, (b.w + dx) / b.w);
+      let scaleY = Math.max(0.2, (b.h + dy) / b.h);
+      if (shiftKey) {
+        scaleX = scaleY = Math.max(scaleX, scaleY);
+      }
+      target.points = snapshot.points.map(p => ({
+        x: b.x + (p.x - b.x) * scaleX,
+        y: b.y + (p.y - b.y) * scaleY
+      }));
+      return;
+    }
+
+    // Box shapes: rectangle, ellipse, blur
+    const orig = getNormalizedBox(snapshot);
+    let newX = orig.x;
+    let newY = orig.y;
+    let newW = orig.w;
+    let newH = orig.h;
+
+    if (handleId === 'e') {
+      newW = Math.max(6, orig.w + dx);
+    } else if (handleId === 'w') {
+      newW = Math.max(6, orig.w - dx);
+      newX = orig.x + (orig.w - newW);
+    } else if (handleId === 's') {
+      newH = Math.max(6, orig.h + dy);
+    } else if (handleId === 'n') {
+      newH = Math.max(6, orig.h - dy);
+      newY = orig.y + (orig.h - newH);
+    } else if (handleId === 'se') {
+      newW = Math.max(6, orig.w + dx);
+      newH = Math.max(6, orig.h + dy);
+      if (shiftKey) {
+        const sz = Math.max(newW, newH);
+        newW = sz;
+        newH = sz;
+      }
+    } else if (handleId === 'sw') {
+      newW = Math.max(6, orig.w - dx);
+      newX = orig.x + (orig.w - newW);
+      newH = Math.max(6, orig.h + dy);
+      if (shiftKey) {
+        const sz = Math.max(newW, newH);
+        newX = orig.x + (orig.w - sz);
+        newW = sz;
+        newH = sz;
+      }
+    } else if (handleId === 'ne') {
+      newW = Math.max(6, orig.w + dx);
+      newH = Math.max(6, orig.h - dy);
+      newY = orig.y + (orig.h - newH);
+      if (shiftKey) {
+        const sz = Math.max(newW, newH);
+        newY = orig.y + (orig.h - sz);
+        newW = sz;
+        newH = sz;
+      }
+    } else if (handleId === 'nw') {
+      newW = Math.max(6, orig.w - dx);
+      newX = orig.x + (orig.w - newW);
+      newH = Math.max(6, orig.h - dy);
+      newY = orig.y + (orig.h - newH);
+      if (shiftKey) {
+        const sz = Math.max(newW, newH);
+        newX = orig.x + (orig.w - sz);
+        newY = orig.y + (orig.h - sz);
+        newW = sz;
+        newH = sz;
+      }
+    }
+
+    target.x = newX;
+    target.y = newY;
+    target.w = newW;
+    target.h = newH;
+  }
+
   // Event Listeners
   function setupEventListeners() {
     canvas.addEventListener('mousedown', onMouseDown);
+    canvas.addEventListener('dblclick', onDoubleClick);
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
 
@@ -798,6 +1281,15 @@
           activeTextInput.color = currentColor;
           activeTextInput.textarea.style.color = currentColor;
         }
+        // If a shape is selected, update its color
+        if (selectedShapeIndex >= 0 && shapes[selectedShapeIndex]) {
+          const s = shapes[selectedShapeIndex];
+          if (s.color !== undefined) {
+            s.color = currentColor;
+            commitHistory();
+            render();
+          }
+        }
       });
     });
 
@@ -808,6 +1300,15 @@
       if (activeTextInput) {
         activeTextInput.color = currentColor;
         activeTextInput.textarea.style.color = currentColor;
+      }
+      // If a shape is selected, update its color
+      if (selectedShapeIndex >= 0 && shapes[selectedShapeIndex]) {
+        const s = shapes[selectedShapeIndex];
+        if (s.color !== undefined) {
+          s.color = currentColor;
+          commitHistory();
+          render();
+        }
       }
     });
 
@@ -827,6 +1328,18 @@
             activeTextInput.adjustSize();
           }
         }
+        // If a shape is selected, update its stroke
+        if (selectedShapeIndex >= 0 && shapes[selectedShapeIndex]) {
+          const s = shapes[selectedShapeIndex];
+          if (s.stroke !== undefined) {
+            s.stroke = currentStroke;
+            if (s.type === 'text') {
+              s.fontSize = getBaseFontSize(currentStroke);
+            }
+            commitHistory();
+            render();
+          }
+        }
       });
     });
 
@@ -838,6 +1351,17 @@
         if (opacityVal) {
           opacityVal.textContent = `${val}%`;
         }
+        // If selected shape is highlighter, update opacity live
+        if (selectedShapeIndex >= 0 && shapes[selectedShapeIndex] && shapes[selectedShapeIndex].type === 'highlighter') {
+          shapes[selectedShapeIndex].opacity = currentOpacity;
+          render();
+        }
+      });
+
+      opacitySlider.addEventListener('change', () => {
+        if (selectedShapeIndex >= 0 && shapes[selectedShapeIndex] && shapes[selectedShapeIndex].type === 'highlighter') {
+          commitHistory();
+        }
       });
     }
 
@@ -847,7 +1371,12 @@
         redactModeBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentRedactMode = btn.dataset.mode;
-        if (currentTool !== 'blur') {
+        // If a blur shape is selected, update its mode
+        if (selectedShapeIndex >= 0 && shapes[selectedShapeIndex] && shapes[selectedShapeIndex].type === 'blur') {
+          shapes[selectedShapeIndex].mode = currentRedactMode;
+          commitHistory();
+          render();
+        } else if (currentTool !== 'blur') {
           setTool('blur');
         }
       });
@@ -861,8 +1390,18 @@
         if (blurIntensityVal) {
           blurIntensityVal.textContent = val;
         }
-        if (currentTool !== 'blur') {
+        // If selected shape is blur, update intensity live
+        if (selectedShapeIndex >= 0 && shapes[selectedShapeIndex] && shapes[selectedShapeIndex].type === 'blur') {
+          shapes[selectedShapeIndex].intensity = currentRedactIntensity;
+          render();
+        } else if (currentTool !== 'blur') {
           setTool('blur');
+        }
+      });
+
+      blurIntensitySlider.addEventListener('change', () => {
+        if (selectedShapeIndex >= 0 && shapes[selectedShapeIndex] && shapes[selectedShapeIndex].type === 'blur') {
+          commitHistory();
         }
       });
     }
@@ -887,6 +1426,7 @@
     // Action buttons
     btnUndo.addEventListener('click', undo);
     btnRedo.addEventListener('click', redo);
+    if (btnDelete) btnDelete.addEventListener('click', deleteSelectedShape);
     btnClear.addEventListener('click', clearAll);
     btnCopy.addEventListener('click', copyToClipboard);
 
@@ -895,7 +1435,7 @@
   }
 
   function setTool(tool) {
-    if (tool !== 'rectangle' && tool !== 'ellipse' && tool !== 'line' && tool !== 'arrow' && tool !== 'step' && tool !== 'highlighter' && tool !== 'blur' && tool !== 'text') return;
+    if (tool !== 'select' && tool !== 'rectangle' && tool !== 'ellipse' && tool !== 'line' && tool !== 'arrow' && tool !== 'step' && tool !== 'highlighter' && tool !== 'blur' && tool !== 'text') return;
     if (activeTextInput && tool !== 'text') {
       commitActiveText();
     }
@@ -903,9 +1443,17 @@
     toolBtns.forEach(btn => {
       btn.classList.toggle('active', btn.dataset.tool === tool);
     });
+    canvas.classList.toggle('tool-select', tool === 'select');
     canvas.classList.toggle('tool-text', tool === 'text');
     canvas.classList.toggle('tool-highlighter', tool === 'highlighter');
     canvas.classList.toggle('tool-step', tool === 'step');
+
+    if (tool !== 'select') {
+      canvas.style.cursor = '';
+      if (selectedShapeIndex >= 0) {
+        selectShape(-1);
+      }
+    }
 
     if (toolContextGroup) {
       toolContextGroup.classList.toggle('active', tool === 'highlighter' || tool === 'blur');
@@ -976,7 +1524,7 @@
     }
   }
 
-  function spawnTextInput(clientX, clientY) {
+  function spawnTextInput(clientX, clientY, initialText = '', initialColor = currentColor, initialFontSize = null) {
     commitActiveText(); // Commit any existing open text input first
 
     const rect = canvas.getBoundingClientRect();
@@ -986,12 +1534,15 @@
     const containerX = clientX - rect.left;
     const containerY = clientY - rect.top;
 
-    const baseFontSize = getBaseFontSize(currentStroke);
+    const baseFontSize = initialFontSize ? Math.round(initialFontSize / scaleX) : getBaseFontSize(currentStroke);
     const textarea = document.createElement('textarea');
     textarea.className = 'canvas-text-editor';
     textarea.placeholder = 'Type text...';
     textarea.spellcheck = false;
     textarea.rows = 1;
+    if (initialText) {
+      textarea.value = initialText;
+    }
 
     // Keep textarea within visible bounds of the canvas container
     const minW = 140;
@@ -1001,7 +1552,7 @@
     textarea.style.left = `${posX}px`;
     textarea.style.top = `${posY}px`;
     textarea.style.fontSize = `${baseFontSize}px`;
-    textarea.style.color = currentColor;
+    textarea.style.color = initialColor;
     textarea.style.minWidth = `${minW}px`;
 
     const adjustSize = () => {
@@ -1016,7 +1567,7 @@
       baseFontSize,
       scaleX,
       scaleY,
-      color: currentColor,
+      color: initialColor,
       adjustSize,
       isClosed: false
     };
@@ -1050,6 +1601,9 @@
     // Focus after current event loop cycle to guarantee focus isn't overridden by mouse event
     setTimeout(() => {
       textarea.focus();
+      if (initialText) {
+        textarea.select();
+      }
     }, 0);
   }
 
@@ -1075,9 +1629,44 @@
     const bannerHeight = getBannerHeight();
 
     startX = coords.x;
-    // Map coordinate relative to screenshot image
     startY = coords.y - bannerHeight;
+
+    // Selection mode interaction
+    if (currentTool === 'select') {
+      // 1. Check if clicked on a resize handle of the currently selected shape
+      if (selectedShapeIndex >= 0 && selectedShapeIndex < shapes.length) {
+        const handle = hitTestHandles(shapes[selectedShapeIndex], startX, startY);
+        if (handle) {
+          dragMode = 'resize';
+          activeHandle = handle;
+          dragStartCoords = { x: startX, y: startY };
+          shapeStartSnapshot = cloneShape(shapes[selectedShapeIndex]);
+          hasMovedOrResized = false;
+          return;
+        }
+      }
+
+      // 2. Check if clicked on any shape
+      const hitIndex = getShapeAt(startX, startY);
+      if (hitIndex >= 0) {
+        selectShape(hitIndex);
+        dragMode = 'move';
+        activeHandle = null;
+        dragStartCoords = { x: startX, y: startY };
+        shapeStartSnapshot = cloneShape(shapes[hitIndex]);
+        hasMovedOrResized = false;
+        return;
+      }
+
+      // 3. Clicked empty canvas: deselect
+      selectShape(-1);
+      dragMode = null;
+      return;
+    }
+
+    // Normal drawing tool workflow
     isDrawing = true;
+    dragMode = 'draw';
 
     if (currentTool === 'step') {
       const stepNum = getNextStepNumber(shapes);
@@ -1107,12 +1696,63 @@
   }
 
   function onMouseMove(e) {
-    if (!isDrawing) return;
-
     const coords = getCanvasCoordinates(e);
     const bannerHeight = getBannerHeight();
     const currentX = coords.x;
     const currentY = coords.y - bannerHeight;
+
+    // Handle cursor update when not dragging in select mode
+    if (currentTool === 'select' && !dragMode) {
+      if (selectedShapeIndex >= 0 && selectedShapeIndex < shapes.length) {
+        const handle = hitTestHandles(shapes[selectedShapeIndex], currentX, currentY);
+        if (handle) {
+          canvas.style.cursor = handle.cursor || 'pointer';
+          return;
+        }
+        if (hitTestShape(shapes[selectedShapeIndex], currentX, currentY)) {
+          canvas.style.cursor = 'move';
+          return;
+        }
+      }
+      const hitIndex = getShapeAt(currentX, currentY);
+      if (hitIndex >= 0) {
+        canvas.style.cursor = 'pointer';
+        return;
+      }
+      canvas.style.cursor = 'default';
+      return;
+    }
+
+    // Handle moving an annotation
+    if (dragMode === 'move') {
+      if (selectedShapeIndex < 0 || selectedShapeIndex >= shapes.length || !shapeStartSnapshot) return;
+      const dx = currentX - dragStartCoords.x;
+      const dy = currentY - dragStartCoords.y;
+      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+        hasMovedOrResized = true;
+      }
+      const target = shapes[selectedShapeIndex];
+      applyMove(target, shapeStartSnapshot, dx, dy);
+      render();
+      return;
+    }
+
+    // Handle resizing an annotation
+    if (dragMode === 'resize') {
+      if (selectedShapeIndex < 0 || selectedShapeIndex >= shapes.length || !shapeStartSnapshot || !activeHandle) return;
+      const dx = currentX - dragStartCoords.x;
+      const dy = currentY - dragStartCoords.y;
+      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+        hasMovedOrResized = true;
+      }
+      const target = shapes[selectedShapeIndex];
+      applyResize(target, shapeStartSnapshot, activeHandle, dx, dy, e.shiftKey, currentX, currentY);
+      render();
+      return;
+    }
+
+    // Handle drawing new shapes
+    if (!isDrawing) return;
 
     if (currentTool === 'rectangle' || currentTool === 'ellipse' || currentTool === 'blur') {
       let rw = Math.abs(currentX - startX);
@@ -1220,8 +1860,21 @@
   }
 
   function onMouseUp(e) {
+    if (dragMode === 'move' || dragMode === 'resize') {
+      if (hasMovedOrResized) {
+        commitHistory();
+      }
+      dragMode = null;
+      activeHandle = null;
+      shapeStartSnapshot = null;
+      hasMovedOrResized = false;
+      render();
+      return;
+    }
+
     if (!isDrawing) return;
     isDrawing = false;
+    dragMode = null;
 
     if (dragPreviewShape) {
       let isValid = false;
@@ -1241,7 +1894,15 @@
       }
 
       if (isValid) {
-        shapes.push({ ...dragPreviewShape });
+        const shapeToAdd = cloneShape(dragPreviewShape);
+        if (shapeToAdd.type === 'rectangle' || shapeToAdd.type === 'ellipse' || shapeToAdd.type === 'blur') {
+          const norm = getNormalizedBox(shapeToAdd);
+          shapeToAdd.x = norm.x;
+          shapeToAdd.y = norm.y;
+          shapeToAdd.w = norm.w;
+          shapeToAdd.h = norm.h;
+        }
+        shapes.push(shapeToAdd);
         renumberSteps(shapes);
         commitHistory();
       }
@@ -1252,9 +1913,35 @@
     render();
   }
 
+  // Double Click Handler for editing text annotation inline
+  function onDoubleClick(e) {
+    if (currentTool !== 'select') return;
+    const coords = getCanvasCoordinates(e);
+    const bannerHeight = getBannerHeight();
+    const px = coords.x;
+    const py = coords.y - bannerHeight;
+
+    const hitIndex = getShapeAt(px, py);
+    if (hitIndex >= 0 && shapes[hitIndex].type === 'text') {
+      const textShape = shapes.splice(hitIndex, 1)[0];
+      selectedShapeIndex = -1;
+      updateDeleteButton();
+      commitHistory();
+      render();
+
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = rect.width / canvas.width;
+      const scaleY = rect.height / canvas.height;
+      const clientX = rect.left + textShape.x * scaleX;
+      const clientY = rect.top + (textShape.y + bannerHeight) * scaleY;
+
+      spawnTextInput(clientX, clientY, textShape.text, textShape.color, textShape.fontSize);
+    }
+  }
+
   // History Management
   function commitHistory() {
-    undoStack.push(shapes.map(s => ({ ...s })));
+    undoStack.push(cloneShapes(shapes));
     if (undoStack.length > MAX_HISTORY) {
       undoStack.shift();
     }
@@ -1269,8 +1956,12 @@
     const current = undoStack.pop();
     redoStack.push(current);
 
-    shapes = undoStack[undoStack.length - 1].map(s => ({ ...s }));
+    shapes = cloneShapes(undoStack[undoStack.length - 1]);
     renumberSteps(shapes);
+    if (selectedShapeIndex >= shapes.length) {
+      selectedShapeIndex = -1;
+    }
+    updateDeleteButton();
     render();
     updateHistoryButtons();
   }
@@ -1282,8 +1973,12 @@
     const next = redoStack.pop();
     undoStack.push(next);
 
-    shapes = next.map(s => ({ ...s }));
+    shapes = cloneShapes(next);
     renumberSteps(shapes);
+    if (selectedShapeIndex >= shapes.length) {
+      selectedShapeIndex = -1;
+    }
+    updateDeleteButton();
     render();
     updateHistoryButtons();
   }
@@ -1293,6 +1988,8 @@
     if (shapes.length === 0) return;
 
     shapes = [];
+    selectedShapeIndex = -1;
+    updateDeleteButton();
     commitHistory();
     render();
   }
@@ -1311,30 +2008,61 @@
 
     const isCtrlOrMeta = e.ctrlKey || e.metaKey;
 
-    // Tool shortcuts: R for Rectangle, O for Ellipse, L for Line, A for Arrow, H for Highlighter, B for Blur, T for Text
+    // Delete or Backspace key: Delete selected annotation
+    if ((e.key === 'Delete' || e.key === 'Backspace') && !isCtrlOrMeta) {
+      if (selectedShapeIndex >= 0 && selectedShapeIndex < shapes.length) {
+        e.preventDefault();
+        deleteSelectedShape();
+        return;
+      }
+    }
+
+    // Arrow keys: Nudge selected annotation
+    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !isCtrlOrMeta) {
+      if (selectedShapeIndex >= 0 && selectedShapeIndex < shapes.length) {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 1;
+        let dx = 0, dy = 0;
+        if (e.key === 'ArrowUp') dy = -step;
+        if (e.key === 'ArrowDown') dy = step;
+        if (e.key === 'ArrowLeft') dx = -step;
+        if (e.key === 'ArrowRight') dx = step;
+        const shape = shapes[selectedShapeIndex];
+        applyMove(shape, cloneShape(shape), dx, dy);
+        commitHistory();
+        render();
+        return;
+      }
+    }
+
+    // Tool shortcuts: V for Select, R for Rectangle, O for Ellipse, L for Line, A for Arrow, H for Highlighter, B for Blur, T for Text, N for Step
     if (!isCtrlOrMeta && !e.altKey && !e.shiftKey) {
-      if (e.key.toLowerCase() === 'r') {
+      const key = e.key.toLowerCase();
+      if (key === 'v') {
+        setTool('select');
+        return;
+      } else if (key === 'r') {
         setTool('rectangle');
         return;
-      } else if (e.key.toLowerCase() === 'o') {
+      } else if (key === 'o') {
         setTool('ellipse');
         return;
-      } else if (e.key.toLowerCase() === 'l') {
+      } else if (key === 'l') {
         setTool('line');
         return;
-      } else if (e.key.toLowerCase() === 'a') {
+      } else if (key === 'a') {
         setTool('arrow');
         return;
-      } else if (e.key.toLowerCase() === 'h') {
+      } else if (key === 'h') {
         setTool('highlighter');
         return;
-      } else if (e.key.toLowerCase() === 'b') {
+      } else if (key === 'b') {
         setTool('blur');
         return;
-      } else if (e.key.toLowerCase() === 't') {
+      } else if (key === 't') {
         setTool('text');
         return;
-      } else if (e.key.toLowerCase() === 'n') {
+      } else if (key === 'n') {
         setTool('step');
         return;
       }
@@ -1361,17 +2089,30 @@
       return;
     }
 
-    // Escape: Cancel current drawing drag
-    if (e.key === 'Escape' && isDrawing) {
-      isDrawing = false;
-      dragPreviewShape = null;
-      render();
+    // Escape: Cancel current drawing drag or deselect
+    if (e.key === 'Escape') {
+      if (isDrawing) {
+        isDrawing = false;
+        dragPreviewShape = null;
+        render();
+        return;
+      }
+      if (selectedShapeIndex >= 0) {
+        selectShape(-1);
+        return;
+      }
     }
   }
 
   // Copy to Clipboard and Auto-Close
   async function copyToClipboard() {
     commitActiveText();
+    const prevSelected = selectedShapeIndex;
+    if (selectedShapeIndex >= 0) {
+      selectedShapeIndex = -1;
+      render();
+    }
+
     btnCopy.disabled = true;
     btnCopy.innerHTML = `
       <svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -1413,6 +2154,10 @@
       console.error('Clipboard copy error:', err);
       showToast('Copy Failed', 'Please grant clipboard permissions or click inside tab.');
       btnCopy.disabled = false;
+      if (prevSelected >= 0) {
+        selectedShapeIndex = prevSelected;
+        render();
+      }
       btnCopy.innerHTML = `
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>

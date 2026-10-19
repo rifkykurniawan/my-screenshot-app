@@ -569,6 +569,12 @@ body {
   border-color: var(--border-color);
 }
 
+.btn-icon.btn-danger-hover:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
 .btn-icon:disabled {
   opacity: 0.3;
   cursor: not-allowed;
@@ -648,6 +654,10 @@ body {
 #screenshot-canvas {
   display: block;
   cursor: crosshair;
+}
+
+#screenshot-canvas.tool-select {
+  cursor: default;
 }
 
 #screenshot-canvas.tool-text {

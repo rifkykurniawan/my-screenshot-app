@@ -7,7 +7,7 @@ Mark `[x]` when a day is done.
 - [x] Day 2 (Wed Oct 14): Highlighter
 - [x] Day 3 (Thu Oct 15): Blur / pixelate
 - [x] Day 4 (Fri Oct 16): Numbered markers
-- [ ] Day 5 (Sat Oct 17): Select, move, resize, delete
+- [x] Day 5 (Sat Oct 17): Select, move, resize, delete
 - [ ] Day 6 (Sun Oct 18): Sunday rest / catch-up
 - [ ] Day 7 (Mon Oct 19): Eraser, clear all, review (M1)
 
