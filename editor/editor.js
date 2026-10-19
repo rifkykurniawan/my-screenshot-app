@@ -51,6 +51,11 @@
   let shapeStartSnapshot = null;
   let hasMovedOrResized = false;
 
+  // Eraser State
+  let hoveredEraserIndex = -1;
+  let isErasing = false;
+  let erasedInCurrentDrag = false;
+
   // Deep clone helpers for shapes with nested points arrays
   function cloneShape(s) {
     if (!s) return s;
@@ -85,6 +90,7 @@
   async function init() {
     setupEventListeners();
     setTool(currentTool);
+    updateHistoryButtons();
     await loadScreenshot();
   }
 
@@ -226,6 +232,11 @@
     // 5. Draw Selection Handles & Bounding Box (when in select tool and shape selected)
     if (currentTool === 'select' && selectedShapeIndex >= 0 && selectedShapeIndex < shapes.length) {
       drawSelectionUI(shapes[selectedShapeIndex], bannerHeight);
+    }
+
+    // 6. Draw Eraser Hover Highlight (when in eraser tool and hovering a shape)
+    if (currentTool === 'eraser' && hoveredEraserIndex >= 0 && hoveredEraserIndex < shapes.length) {
+      drawEraserPreview(shapes[hoveredEraserIndex], bannerHeight);
     }
 
     // Update Dimensions Badge
@@ -1029,6 +1040,67 @@
     ctx.restore();
   }
 
+  // Draw Eraser Hover Highlight
+  function drawEraserPreview(shape, bannerOffset = 0) {
+    if (!shape) return;
+    ctx.save();
+
+    if (shape.type === 'line' || shape.type === 'arrow') {
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.65)';
+      ctx.lineWidth = Math.max(8, (shape.stroke || 4) + 8);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(shape.x1, shape.y1 + bannerOffset);
+      ctx.lineTo(shape.x2, shape.y2 + bannerOffset);
+      ctx.stroke();
+    } else if (shape.type === 'step') {
+      const r = getStepMetrics(shape.stroke || 4).radius;
+      // Red tint fill
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+      ctx.beginPath();
+      ctx.arc(shape.x, shape.y + bannerOffset, r + 4, 0, Math.PI * 2);
+      ctx.fill();
+      // Red dashed border
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else {
+      const b = getShapeBounds(shape);
+      // Red tint fill
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.16)';
+      ctx.fillRect(b.x - 3, b.y + bannerOffset - 3, b.w + 6, b.h + 6);
+      // Red dashed border
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(b.x - 3, b.y + bannerOffset - 3, b.w + 6, b.h + 6);
+      ctx.setLineDash([]);
+    }
+
+    ctx.restore();
+  }
+
+  // Erase Shape Operation
+  function eraseShape(index) {
+    if (index < 0 || index >= shapes.length) return;
+    const removed = shapes.splice(index, 1)[0];
+    erasedInCurrentDrag = true;
+    if (selectedShapeIndex === index) {
+      selectedShapeIndex = -1;
+    } else if (selectedShapeIndex > index) {
+      selectedShapeIndex--;
+    }
+    hoveredEraserIndex = -1;
+    if (removed && removed.type === 'step') {
+      renumberSteps(shapes);
+    }
+    updateDeleteButton();
+    updateHistoryButtons();
+    render();
+  }
+
   // Selection Management
   function selectShape(index) {
     if (index < 0 || index >= shapes.length) {
@@ -1435,7 +1507,7 @@
   }
 
   function setTool(tool) {
-    if (tool !== 'select' && tool !== 'rectangle' && tool !== 'ellipse' && tool !== 'line' && tool !== 'arrow' && tool !== 'step' && tool !== 'highlighter' && tool !== 'blur' && tool !== 'text') return;
+    if (tool !== 'select' && tool !== 'eraser' && tool !== 'rectangle' && tool !== 'ellipse' && tool !== 'line' && tool !== 'arrow' && tool !== 'step' && tool !== 'highlighter' && tool !== 'blur' && tool !== 'text') return;
     if (activeTextInput && tool !== 'text') {
       commitActiveText();
     }
@@ -1444,15 +1516,22 @@
       btn.classList.toggle('active', btn.dataset.tool === tool);
     });
     canvas.classList.toggle('tool-select', tool === 'select');
+    canvas.classList.toggle('tool-eraser', tool === 'eraser');
     canvas.classList.toggle('tool-text', tool === 'text');
     canvas.classList.toggle('tool-highlighter', tool === 'highlighter');
     canvas.classList.toggle('tool-step', tool === 'step');
 
     if (tool !== 'select') {
-      canvas.style.cursor = '';
       if (selectedShapeIndex >= 0) {
         selectShape(-1);
       }
+    }
+    if (tool !== 'select' && tool !== 'eraser') {
+      canvas.style.cursor = '';
+    }
+    if (tool !== 'eraser') {
+      hoveredEraserIndex = -1;
+      isErasing = false;
     }
 
     if (toolContextGroup) {
@@ -1664,6 +1743,17 @@
       return;
     }
 
+    // Eraser mode interaction
+    if (currentTool === 'eraser') {
+      isErasing = true;
+      erasedInCurrentDrag = false;
+      const hitIndex = getShapeAt(startX, startY);
+      if (hitIndex >= 0) {
+        eraseShape(hitIndex);
+      }
+      return;
+    }
+
     // Normal drawing tool workflow
     isDrawing = true;
     dragMode = 'draw';
@@ -1720,6 +1810,21 @@
         return;
       }
       canvas.style.cursor = 'default';
+      return;
+    }
+
+    // Handle eraser tool hover & drag-erasing
+    if (currentTool === 'eraser') {
+      const hitIndex = getShapeAt(currentX, currentY);
+      hoveredEraserIndex = hitIndex;
+      if (isErasing) {
+        if (hitIndex >= 0) {
+          eraseShape(hitIndex);
+        }
+      } else {
+        canvas.style.cursor = (hitIndex >= 0) ? 'pointer' : 'crosshair';
+        render();
+      }
       return;
     }
 
@@ -1860,6 +1965,16 @@
   }
 
   function onMouseUp(e) {
+    if (currentTool === 'eraser' && isErasing) {
+      isErasing = false;
+      if (erasedInCurrentDrag) {
+        commitHistory();
+      }
+      erasedInCurrentDrag = false;
+      render();
+      return;
+    }
+
     if (dragMode === 'move' || dragMode === 'resize') {
       if (hasMovedOrResized) {
         commitHistory();
@@ -1989,14 +2104,19 @@
 
     shapes = [];
     selectedShapeIndex = -1;
+    hoveredEraserIndex = -1;
     updateDeleteButton();
     commitHistory();
     render();
+    showToast('Cleared All Annotations', 'Press Ctrl+Z to undo');
   }
 
   function updateHistoryButtons() {
     btnUndo.disabled = undoStack.length <= 1;
     btnRedo.disabled = redoStack.length === 0;
+    if (btnClear) {
+      btnClear.disabled = shapes.length === 0;
+    }
   }
 
   // Keyboard Shortcuts Handler
@@ -2035,11 +2155,14 @@
       }
     }
 
-    // Tool shortcuts: V for Select, R for Rectangle, O for Ellipse, L for Line, A for Arrow, H for Highlighter, B for Blur, T for Text, N for Step
+    // Tool shortcuts: V for Select, E for Eraser, R for Rectangle, O for Ellipse, L for Line, A for Arrow, H for Highlighter, B for Blur, T for Text, N for Step
     if (!isCtrlOrMeta && !e.altKey && !e.shiftKey) {
       const key = e.key.toLowerCase();
       if (key === 'v') {
         setTool('select');
+        return;
+      } else if (key === 'e') {
+        setTool('eraser');
         return;
       } else if (key === 'r') {
         setTool('rectangle');
@@ -2108,10 +2231,12 @@
   async function copyToClipboard() {
     commitActiveText();
     const prevSelected = selectedShapeIndex;
+    const prevEraserHover = hoveredEraserIndex;
     if (selectedShapeIndex >= 0) {
       selectedShapeIndex = -1;
-      render();
     }
+    hoveredEraserIndex = -1;
+    render();
 
     btnCopy.disabled = true;
     btnCopy.innerHTML = `
@@ -2156,8 +2281,9 @@
       btnCopy.disabled = false;
       if (prevSelected >= 0) {
         selectedShapeIndex = prevSelected;
-        render();
       }
+      hoveredEraserIndex = prevEraserHover;
+      render();
       btnCopy.innerHTML = `
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>

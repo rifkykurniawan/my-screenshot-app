@@ -660,6 +660,10 @@ body {
   cursor: default;
 }
 
+#screenshot-canvas.tool-eraser {
+  cursor: crosshair;
+}
+
 #screenshot-canvas.tool-text {
   cursor: text;
 }

@@ -11,8 +11,9 @@ A lightweight, productivity-focused Chrome extension for capturing and annotatin
   - **Include DevTools**: Full Chrome window capture including inspect element / DevTools panel and browser bar (`Alt+Shift+W`).
 - **DevTools / Inspect Element Capture**: Captures the complete browser window with docked developer tools (Console, Network, Elements, etc.) without cropping.
 - **Top URL & Timestamp Header**: Automatically appends a clean browser-style top banner containing the source page URL and capture timestamp (YYYY-MM-DD HH:MM:SS) for viewport captures. Includes an on/off toggle in the toolbar.
-- **Annotation Tools (Select, Rectangle, Ellipse, Line, Arrow, Step, Highlight, Blur, Text)**: 
+- **Annotation Tools (Select, Eraser, Rectangle, Ellipse, Line, Arrow, Step, Highlight, Blur, Text)**: 
   - **Select & Edit Tool (`V`)**: Click any existing annotation to select it, drag to move, drag 8-point handles to resize, nudge with Arrow keys, change colors/strokes live, or press `Delete` / `Backspace` to remove. Double-click text annotations to edit inline.
+  - **Eraser Tool (`E`)**: Click any annotation or drag across multiple annotations to remove them instantly with red hover highlight preview, step renumbering, and full undo support.
   - **Rectangle Tool (`R`)**: Draw outline rectangles smoothly to highlight key areas, text, or elements. Hold `Shift` to constrain to a square.
   - **Ellipse Tool (`O`)**: Draw clean circular or oval highlights around UI controls. Hold `Shift` to constrain to a perfect circle.
   - **Line Tool (`L`)**: Draw straight rule lines to separate or underline content. Hold `Shift` to snap angle in 45° increments.
@@ -74,6 +75,7 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 | `Alt + Shift + S` *(Option+Shift+S on Mac)* | Capture active viewport & open editor |
 | `Alt + Shift + W` *(Option+Shift+W on Mac)* | Capture window with DevTools & open editor |
 | `V` | Select tool (Click annotation to select, drag to move, drag handles to resize) |
+| `E` | Eraser tool (Click or drag across annotations to erase) |
 | `R` | Select Rectangle tool |
 | `O` | Select Ellipse tool |
 | `L` | Select Line tool |

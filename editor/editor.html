@@ -35,6 +35,14 @@
           </svg>
           <span>Select</span>
         </button>
+        <button class="tool-btn" data-tool="eraser" title="Eraser Tool (E) - Click or drag to erase">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path>
+            <path d="M22 21H7"></path>
+            <path d="m5 11 9 9"></path>
+          </svg>
+          <span>Eraser</span>
+        </button>
         <button class="tool-btn active" data-tool="rectangle" title="Rectangle Tool (R)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="2"></rect>
@@ -206,7 +214,7 @@
             <line x1="14" y1="11" x2="14" y2="17"></line>
           </svg>
         </button>
-        <button id="btn-clear" class="btn-icon" title="Clear all annotations">
+        <button id="btn-clear" class="btn-icon btn-danger-hover" title="Clear all annotations" disabled>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
