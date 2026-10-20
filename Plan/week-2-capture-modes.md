@@ -4,8 +4,8 @@ Goal: more ways to get an image into the editor.
 Main files: `background.js`, `popup/*`, `capture/*`, `manifest.json`, `editor/editor.js`.
 
 ## Day 8 (Tue Oct 20): Crop tool
-- [ ] Add Crop tool with a draggable region and apply/cancel
-- [ ] Keep annotations aligned after cropping
+- [x] Add Crop tool with a draggable region and apply/cancel
+- [x] Keep annotations aligned after cropping
 - **Done when:** the cropped image is what gets copied.
 
 ## Day 9 (Wed Oct 21): Paste / drop image

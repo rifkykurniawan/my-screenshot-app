@@ -35,6 +35,13 @@
           </svg>
           <span>Select</span>
         </button>
+        <button class="tool-btn" data-tool="crop" title="Crop Tool (C) - Select area to crop">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2v14a2 2 0 0 0 2 2h14"></path>
+            <path d="M18 22V8a2 2 0 0 0-2-2H2"></path>
+          </svg>
+          <span>Crop</span>
+        </button>
         <button class="tool-btn" data-tool="eraser" title="Eraser Tool (E) - Click or drag to erase">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path>
@@ -179,6 +186,24 @@
             <span id="blur-intensity-val" class="intensity-badge">3</span>
           </div>
         </div>
+
+        <!-- Crop Controls -->
+        <div class="crop-controls" id="crop-controls" title="Crop Actions">
+          <span class="crop-badge" id="crop-dim-badge">0 × 0 px</span>
+          <button type="button" class="btn-crop-action btn-crop-apply" id="btn-crop-apply" title="Apply Crop (Enter)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Apply</span>
+          </button>
+          <button type="button" class="btn-crop-action btn-crop-cancel" id="btn-crop-cancel" title="Cancel Crop (Esc)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            <span>Cancel</span>
+          </button>
+        </div>
       </div>
 
       <div class="toolbar-divider"></div>
@@ -240,6 +265,27 @@
   <main class="editor-workspace" id="workspace">
     <div class="canvas-container" id="canvas-container">
       <canvas id="screenshot-canvas"></canvas>
+
+      <!-- Floating Crop Action Bar -->
+      <div class="crop-floating-bar hidden" id="crop-floating-bar">
+        <span class="crop-floating-dim" id="crop-floating-dim">0 × 0</span>
+        <div class="crop-floating-divider"></div>
+        <button type="button" class="crop-float-btn crop-float-apply" id="btn-crop-apply-float" title="Apply Crop (Enter)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span>Apply</span>
+          <kbd class="kbd-mini">↵</kbd>
+        </button>
+        <button type="button" class="crop-float-btn crop-float-cancel" id="btn-crop-cancel-float" title="Cancel Crop (Esc)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          <span>Cancel</span>
+          <kbd class="kbd-mini">Esc</kbd>
+        </button>
+      </div>
     </div>
   </main>
 

@@ -23,6 +23,14 @@
   const blurIntensitySlider = document.getElementById('blur-intensity-slider');
   const blurIntensityVal = document.getElementById('blur-intensity-val');
   const toggleUrlBar = document.getElementById('toggle-url-bar');
+  const cropControls = document.getElementById('crop-controls');
+  const btnCropApply = document.getElementById('btn-crop-apply');
+  const btnCropCancel = document.getElementById('btn-crop-cancel');
+  const cropDimBadge = document.getElementById('crop-dim-badge');
+  const cropFloatingBar = document.getElementById('crop-floating-bar');
+  const btnCropApplyFloat = document.getElementById('btn-crop-apply-float');
+  const btnCropCancelFloat = document.getElementById('btn-crop-cancel-float');
+  const cropFloatingDim = document.getElementById('crop-floating-dim');
   const btnUndo = document.getElementById('btn-undo');
   const btnRedo = document.getElementById('btn-redo');
   const btnDelete = document.getElementById('btn-delete');
@@ -30,7 +38,8 @@
   const btnCopy = document.getElementById('btn-copy');
 
   // Drawing & State
-  let currentTool = 'rectangle'; // 'select' | 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'step' | 'highlighter' | 'blur' | 'text'
+  let currentTool = 'rectangle'; // 'select' | 'crop' | 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'step' | 'highlighter' | 'blur' | 'text'
+  let previousTool = 'rectangle';
   let currentColor = '#ef4444'; // Crimson Red default
   let currentStroke = 4;        // 4px default
   let currentOpacity = 0.4;     // 40% default semi-transparent opacity for highlighter
@@ -42,6 +51,12 @@
   let startX = 0;
   let startY = 0;
   let activeTextInput = null;
+
+  // Crop State
+  let cropBox = null; // { x, y, w, h } in screenshot baseImage coordinates
+  let cropDragMode = null; // 'draw' | 'move' | 'resize'
+  let activeCropHandle = null;
+  let cropStartSnapshot = null;
 
   // Selection and Manipulation State
   let selectedShapeIndex = -1;
@@ -78,7 +93,7 @@
   // Shape-based History (preserves quality and enables seamless URL bar toggling)
   const MAX_HISTORY = 40;
   let shapes = []; // Array of shape objects
-  let undoStack = [[]]; // Stack of shapes array snapshots
+  let undoStack = [{ shapes: [], baseImage: null }]; // Stack of state snapshots { shapes, baseImage }
   let redoStack = [];
 
   // Live drag preview state
@@ -141,6 +156,9 @@
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       baseImage = img;
+      if (undoStack.length === 1 && !undoStack[0].baseImage) {
+        undoStack[0].baseImage = baseImage;
+      }
       render();
     };
     img.onerror = () => {
@@ -187,6 +205,9 @@
     tctx.fillText('Notice the URL bar above! Draw shapes, lines, arrows, highlights, blur/pixelate, or text, then Copy.', testCanvas.width / 2, testCanvas.height / 2 + 20);
 
     baseImage = testCanvas;
+    if (undoStack.length === 1 && !undoStack[0].baseImage) {
+      undoStack[0].baseImage = baseImage;
+    }
     render();
   }
 
@@ -239,8 +260,16 @@
       drawEraserPreview(shapes[hoveredEraserIndex], bannerHeight);
     }
 
+    // 7. Draw Crop Overlay (when in crop tool and cropBox is defined)
+    if (currentTool === 'crop' && cropBox) {
+      drawCropUI(cropBox, bannerHeight);
+    }
+
     // Update Dimensions Badge
     dimensionsBadge.textContent = `${canvas.width} × ${canvas.height} px`;
+
+    // Update Floating Crop Bar if active
+    updateCropFloatingBar();
   }
 
   // Draw URL Top Header Bar
@@ -1326,6 +1355,325 @@
     target.h = newH;
   }
 
+  // Crop Tool Operations
+  function initCropBox() {
+    const imgWidth = baseImage ? (baseImage.naturalWidth || baseImage.width) : 1280;
+    const imgHeight = baseImage ? (baseImage.naturalHeight || baseImage.height) : 720;
+    const padX = Math.max(16, Math.round(imgWidth * 0.05));
+    const padY = Math.max(16, Math.round(imgHeight * 0.05));
+    cropBox = {
+      x: padX,
+      y: padY,
+      w: Math.max(50, imgWidth - padX * 2),
+      h: Math.max(50, imgHeight - padY * 2)
+    };
+  }
+
+  function getCropHandles(box) {
+    if (!box) return [];
+    const b = getNormalizedBox(box);
+    return [
+      { id: 'nw', x: b.x, y: b.y, cursor: 'nwse-resize' },
+      { id: 'n', x: b.x + b.w / 2, y: b.y, cursor: 'ns-resize' },
+      { id: 'ne', x: b.x + b.w, y: b.y, cursor: 'nesw-resize' },
+      { id: 'e', x: b.x + b.w, y: b.y + b.h / 2, cursor: 'ew-resize' },
+      { id: 'se', x: b.x + b.w, y: b.y + b.h, cursor: 'nwse-resize' },
+      { id: 's', x: b.x + b.w / 2, y: b.y + b.h, cursor: 'ns-resize' },
+      { id: 'sw', x: b.x, y: b.y + b.h, cursor: 'nesw-resize' },
+      { id: 'w', x: b.x, y: b.y + b.h / 2, cursor: 'ew-resize' }
+    ];
+  }
+
+  function hitTestCropHandles(box, px, py) {
+    if (!box) return null;
+    const handles = getCropHandles(box);
+    for (const h of handles) {
+      if (Math.hypot(px - h.x, py - h.y) <= 12) {
+        return h;
+      }
+    }
+    return null;
+  }
+
+  function isPointInCropBox(box, px, py) {
+    if (!box) return false;
+    const b = getNormalizedBox(box);
+    return px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h;
+  }
+
+  function applyCropResize(snapshot, handleId, currentX, currentY, shiftKey) {
+    const imgWidth = baseImage ? (baseImage.naturalWidth || baseImage.width) : 1280;
+    const imgHeight = baseImage ? (baseImage.naturalHeight || baseImage.height) : 720;
+    let { x, y, w, h } = snapshot;
+    const minSize = 20;
+
+    const cx = Math.max(0, Math.min(imgWidth, currentX));
+    const cy = Math.max(0, Math.min(imgHeight, currentY));
+
+    if (handleId.includes('e')) {
+      w = Math.max(minSize, cx - x);
+    }
+    if (handleId.includes('s')) {
+      h = Math.max(minSize, cy - y);
+    }
+    if (handleId.includes('w')) {
+      const right = x + w;
+      const newX = Math.min(right - minSize, cx);
+      x = newX;
+      w = right - newX;
+    }
+    if (handleId.includes('n')) {
+      const bottom = y + h;
+      const newY = Math.min(bottom - minSize, cy);
+      y = newY;
+      h = bottom - newY;
+    }
+
+    if (shiftKey && snapshot.w > 0 && snapshot.h > 0) {
+      const aspect = snapshot.w / snapshot.h;
+      if (handleId === 'nw' || handleId === 'ne' || handleId === 'sw' || handleId === 'se') {
+        const currentRatio = w / h;
+        if (currentRatio > aspect) {
+          const newW = h * aspect;
+          if (handleId.includes('w')) {
+            x += (w - newW);
+          }
+          w = newW;
+        } else {
+          const newH = w / aspect;
+          if (handleId.includes('n')) {
+            y += (h - newH);
+          }
+          h = newH;
+        }
+      }
+    }
+
+    return { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) };
+  }
+
+  function applyCropMove(snapshot, dx, dy) {
+    const imgWidth = baseImage ? (baseImage.naturalWidth || baseImage.width) : 1280;
+    const imgHeight = baseImage ? (baseImage.naturalHeight || baseImage.height) : 720;
+    let newX = snapshot.x + dx;
+    let newY = snapshot.y + dy;
+
+    newX = Math.max(0, Math.min(imgWidth - snapshot.w, newX));
+    newY = Math.max(0, Math.min(imgHeight - snapshot.h, newY));
+
+    return {
+      x: Math.round(newX),
+      y: Math.round(newY),
+      w: snapshot.w,
+      h: snapshot.h
+    };
+  }
+
+  function drawCropUI(box, bannerOffset = 0) {
+    if (!box) return;
+    const b = getNormalizedBox(box);
+    const imgWidth = baseImage ? (baseImage.naturalWidth || baseImage.width) : canvas.width;
+    const imgHeight = baseImage ? (baseImage.naturalHeight || baseImage.height) : canvas.height;
+    const bx = b.x;
+    const by = b.y + bannerOffset;
+    const bw = b.w;
+    const bh = b.h;
+
+    ctx.save();
+
+    // 1. Shroud outside crop region
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+    if (bannerOffset > 0) {
+      ctx.fillRect(0, 0, canvas.width, bannerOffset);
+    }
+    if (b.y > 0) {
+      ctx.fillRect(0, bannerOffset, imgWidth, b.y);
+    }
+    const bottomRemaining = imgHeight - (b.y + b.h);
+    if (bottomRemaining > 0) {
+      ctx.fillRect(0, bannerOffset + b.y + b.h, imgWidth, bottomRemaining);
+    }
+    if (b.x > 0) {
+      ctx.fillRect(0, by, b.x, b.h);
+    }
+    const rightRemaining = imgWidth - (b.x + b.w);
+    if (rightRemaining > 0) {
+      ctx.fillRect(bx + bw, by, rightRemaining, b.h);
+    }
+
+    // 2. Crop box border
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(bx, by, bw, bh);
+
+    // 3. Rule of Thirds
+    if (bw > 60 && bh > 60) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(bx + bw / 3, by);
+      ctx.lineTo(bx + bw / 3, by + bh);
+      ctx.moveTo(bx + (2 * bw) / 3, by);
+      ctx.lineTo(bx + (2 * bw) / 3, by + bh);
+      ctx.moveTo(bx, by + bh / 3);
+      ctx.lineTo(bx + bw, by + bh / 3);
+      ctx.moveTo(bx, by + (2 * bh) / 3);
+      ctx.lineTo(bx + bw, by + (2 * bh) / 3);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 4. Corner L-brackets
+    const cornerLen = Math.min(20, Math.min(bw, bh) / 3);
+    const cornerThick = 3.5;
+    ctx.fillStyle = '#ffffff';
+
+    // NW
+    ctx.fillRect(bx - 1.5, by - 1.5, cornerLen, cornerThick);
+    ctx.fillRect(bx - 1.5, by - 1.5, cornerThick, cornerLen);
+    // NE
+    ctx.fillRect(bx + bw - cornerLen + 1.5, by - 1.5, cornerLen, cornerThick);
+    ctx.fillRect(bx + bw - cornerThick + 1.5, by - 1.5, cornerThick, cornerLen);
+    // SE
+    ctx.fillRect(bx + bw - cornerLen + 1.5, by + bh - cornerThick + 1.5, cornerLen, cornerThick);
+    ctx.fillRect(bx + bw - cornerThick + 1.5, by + bh - cornerLen + 1.5, cornerThick, cornerLen);
+    // SW
+    ctx.fillRect(bx - 1.5, by + bh - cornerThick + 1.5, cornerLen, cornerThick);
+    ctx.fillRect(bx - 1.5, by + bh - cornerLen + 1.5, cornerThick, cornerLen);
+
+    // 5. Center edge handles
+    const handles = getCropHandles(b);
+    for (const h of handles) {
+      if (h.id === 'n' || h.id === 's' || h.id === 'e' || h.id === 'w') {
+        const hy = h.y + bannerOffset;
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+        ctx.shadowBlur = 4;
+        ctx.fillStyle = '#ffffff';
+        if (h.id === 'n' || h.id === 's') {
+          const ew = 24;
+          const eh = 5;
+          ctx.fillRect(h.x - ew / 2, hy - eh / 2, ew, eh);
+        } else {
+          const ew = 5;
+          const eh = 24;
+          ctx.fillRect(h.x - ew / 2, hy - eh / 2, ew, eh);
+        }
+        ctx.restore();
+      }
+    }
+
+    // 6. Dimension badge pill
+    const dimText = `${Math.round(bw)} × ${Math.round(bh)} px`;
+    ctx.font = '600 12px "Plus Jakarta Sans", system-ui, sans-serif';
+    const textMetrics = ctx.measureText(dimText);
+    const badgeW = textMetrics.width + 16;
+    const badgeH = 24;
+    const badgeX = bx + 8;
+    const badgeY = (by + 8 + badgeH <= by + bh) ? (by + 8) : Math.max(bannerOffset + 4, by - badgeH - 6);
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    roundRect(ctx, badgeX, badgeY, badgeW, badgeH, 6);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(dimText, badgeX + badgeW / 2, badgeY + badgeH / 2);
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  function updateCropFloatingBar() {
+    if (!cropFloatingBar) return;
+    if (currentTool !== 'crop' || !cropBox) {
+      cropFloatingBar.classList.add('hidden');
+      return;
+    }
+    const b = getNormalizedBox(cropBox);
+    if (b.w < 10 || b.h < 10) {
+      cropFloatingBar.classList.add('hidden');
+      return;
+    }
+
+    cropFloatingBar.classList.remove('hidden');
+
+    const dimStr = `${Math.round(b.w)} × ${Math.round(b.h)}`;
+    if (cropFloatingDim) cropFloatingDim.textContent = dimStr;
+    if (cropDimBadge) cropDimBadge.textContent = `${dimStr} px`;
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = rect.width / canvas.width;
+    const scaleY = rect.height / canvas.height;
+    const bannerHeight = getBannerHeight();
+
+    const screenX = (b.x + b.w / 2) * scaleX;
+    const screenYBottom = (b.y + b.h + bannerHeight) * scaleY;
+
+    let top = screenYBottom + 12;
+    if (top + 45 > rect.height) {
+      top = Math.max(10, screenYBottom - 48);
+    }
+
+    cropFloatingBar.style.left = `${Math.max(60, Math.min(rect.width - 60, screenX))}px`;
+    cropFloatingBar.style.top = `${top}px`;
+  }
+
+  function applyCrop() {
+    if (!cropBox || !baseImage) return;
+    const b = getNormalizedBox(cropBox);
+    const imgWidth = baseImage.naturalWidth || baseImage.width;
+    const imgHeight = baseImage.naturalHeight || baseImage.height;
+
+    const cropX = Math.round(Math.max(0, Math.min(imgWidth - 1, b.x)));
+    const cropY = Math.round(Math.max(0, Math.min(imgHeight - 1, b.y)));
+    const cropW = Math.round(Math.min(imgWidth - cropX, b.w));
+    const cropH = Math.round(Math.min(imgHeight - cropY, b.h));
+
+    if (cropW < 10 || cropH < 10) {
+      showToast('Crop Area Too Small', 'Please select a larger region to crop.');
+      return;
+    }
+
+    // 1. Create cropped base image canvas
+    const cropCanvas = document.createElement('canvas');
+    cropCanvas.width = cropW;
+    cropCanvas.height = cropH;
+    const cctx = cropCanvas.getContext('2d');
+    cctx.drawImage(baseImage, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+    baseImage = cropCanvas;
+
+    // 2. Shift all annotation shapes to preserve perfect alignment
+    for (const shape of shapes) {
+      applyMove(shape, cloneShape(shape), -cropX, -cropY);
+    }
+
+    // 3. Clear crop state and exit crop mode
+    cropBox = null;
+    cropDragMode = null;
+    activeCropHandle = null;
+    setTool(previousTool !== 'crop' ? previousTool : 'select');
+
+    // 4. Save history snapshot and re-render
+    commitHistory();
+    render();
+    showToast('Cropped Screenshot', `${cropW} × ${cropH} px (Ctrl+Z to undo)`);
+  }
+
+  function cancelCrop() {
+    cropBox = null;
+    cropDragMode = null;
+    activeCropHandle = null;
+    setTool(previousTool !== 'crop' ? previousTool : 'select');
+    render();
+  }
+
   // Event Listeners
   function setupEventListeners() {
     canvas.addEventListener('mousedown', onMouseDown);
@@ -1502,20 +1850,42 @@
     btnClear.addEventListener('click', clearAll);
     btnCopy.addEventListener('click', copyToClipboard);
 
+    // Crop action buttons
+    if (btnCropApply) btnCropApply.addEventListener('click', applyCrop);
+    if (btnCropCancel) btnCropCancel.addEventListener('click', cancelCrop);
+    if (btnCropApplyFloat) btnCropApplyFloat.addEventListener('click', applyCrop);
+    if (btnCropCancelFloat) btnCropCancelFloat.addEventListener('click', cancelCrop);
+    window.addEventListener('resize', updateCropFloatingBar);
+    if (workspace) workspace.addEventListener('scroll', updateCropFloatingBar);
+
     // Keyboard Shortcuts
     window.addEventListener('keydown', onKeyDown);
   }
 
   function setTool(tool) {
-    if (tool !== 'select' && tool !== 'eraser' && tool !== 'rectangle' && tool !== 'ellipse' && tool !== 'line' && tool !== 'arrow' && tool !== 'step' && tool !== 'highlighter' && tool !== 'blur' && tool !== 'text') return;
+    if (tool !== 'select' && tool !== 'crop' && tool !== 'eraser' && tool !== 'rectangle' && tool !== 'ellipse' && tool !== 'line' && tool !== 'arrow' && tool !== 'step' && tool !== 'highlighter' && tool !== 'blur' && tool !== 'text') return;
     if (activeTextInput && tool !== 'text') {
       commitActiveText();
     }
+
+    if (tool === 'crop') {
+      if (currentTool !== 'crop') {
+        previousTool = currentTool;
+      }
+      initCropBox();
+    } else if (currentTool === 'crop') {
+      cropBox = null;
+      cropDragMode = null;
+      activeCropHandle = null;
+      if (cropFloatingBar) cropFloatingBar.classList.add('hidden');
+    }
+
     currentTool = tool;
     toolBtns.forEach(btn => {
       btn.classList.toggle('active', btn.dataset.tool === tool);
     });
     canvas.classList.toggle('tool-select', tool === 'select');
+    canvas.classList.toggle('tool-crop', tool === 'crop');
     canvas.classList.toggle('tool-eraser', tool === 'eraser');
     canvas.classList.toggle('tool-text', tool === 'text');
     canvas.classList.toggle('tool-highlighter', tool === 'highlighter');
@@ -1526,7 +1896,7 @@
         selectShape(-1);
       }
     }
-    if (tool !== 'select' && tool !== 'eraser') {
+    if (tool !== 'select' && tool !== 'eraser' && tool !== 'crop') {
       canvas.style.cursor = '';
     }
     if (tool !== 'eraser') {
@@ -1535,7 +1905,7 @@
     }
 
     if (toolContextGroup) {
-      toolContextGroup.classList.toggle('active', tool === 'highlighter' || tool === 'blur');
+      toolContextGroup.classList.toggle('active', tool === 'highlighter' || tool === 'blur' || tool === 'crop');
     }
 
     if (opacityControl) {
@@ -1544,6 +1914,10 @@
 
     if (blurControls) {
       blurControls.classList.toggle('blur-active', tool === 'blur');
+    }
+
+    if (cropControls) {
+      cropControls.classList.toggle('crop-active', tool === 'crop');
     }
 
     // If switching to highlighter and currentColor is still initial red default, switch to classic yellow
@@ -1555,6 +1929,8 @@
         currentColor = '#eab308';
       }
     }
+
+    render();
   }
 
   // Active Text Annotation Operations
@@ -1710,6 +2086,33 @@
     startX = coords.x;
     startY = coords.y - bannerHeight;
 
+    // Crop mode interaction
+    if (currentTool === 'crop') {
+      const handle = hitTestCropHandles(cropBox, startX, startY);
+      if (handle) {
+        cropDragMode = 'resize';
+        activeCropHandle = handle;
+        cropStartSnapshot = { ...cropBox };
+        dragStartCoords = { x: startX, y: startY };
+        return;
+      }
+      if (isPointInCropBox(cropBox, startX, startY)) {
+        cropDragMode = 'move';
+        activeCropHandle = null;
+        cropStartSnapshot = { ...cropBox };
+        dragStartCoords = { x: startX, y: startY };
+        return;
+      }
+      // Clicked outside crop box: start drawing a new crop region
+      cropDragMode = 'draw';
+      activeCropHandle = null;
+      cropBox = { x: startX, y: startY, w: 0, h: 0 };
+      cropStartSnapshot = { ...cropBox };
+      dragStartCoords = { x: startX, y: startY };
+      render();
+      return;
+    }
+
     // Selection mode interaction
     if (currentTool === 'select') {
       // 1. Check if clicked on a resize handle of the currently selected shape
@@ -1824,6 +2227,48 @@
       } else {
         canvas.style.cursor = (hitIndex >= 0) ? 'pointer' : 'crosshair';
         render();
+      }
+      return;
+    }
+
+    // Handle crop tool drag & hover cursors
+    if (currentTool === 'crop') {
+      const imgWidth = baseImage ? (baseImage.naturalWidth || baseImage.width) : 1280;
+      const imgHeight = baseImage ? (baseImage.naturalHeight || baseImage.height) : 720;
+
+      if (cropDragMode === 'resize') {
+        cropBox = applyCropResize(cropStartSnapshot, activeCropHandle.id, currentX, currentY, e.shiftKey);
+        render();
+        return;
+      }
+      if (cropDragMode === 'move') {
+        const dx = currentX - dragStartCoords.x;
+        const dy = currentY - dragStartCoords.y;
+        cropBox = applyCropMove(cropStartSnapshot, dx, dy);
+        render();
+        return;
+      }
+      if (cropDragMode === 'draw') {
+        const cx = Math.max(0, Math.min(imgWidth, currentX));
+        const cy = Math.max(0, Math.min(imgHeight, currentY));
+        cropBox = {
+          x: Math.min(dragStartCoords.x, cx),
+          y: Math.min(dragStartCoords.y, cy),
+          w: Math.abs(cx - dragStartCoords.x),
+          h: Math.abs(cy - dragStartCoords.y)
+        };
+        render();
+        return;
+      }
+
+      // Not dragging: update cursor
+      const handle = hitTestCropHandles(cropBox, currentX, currentY);
+      if (handle) {
+        canvas.style.cursor = handle.cursor;
+      } else if (isPointInCropBox(cropBox, currentX, currentY)) {
+        canvas.style.cursor = 'move';
+      } else {
+        canvas.style.cursor = 'crosshair';
       }
       return;
     }
@@ -1965,6 +2410,24 @@
   }
 
   function onMouseUp(e) {
+    if (currentTool === 'crop' && cropDragMode) {
+      if (cropDragMode === 'draw') {
+        cropBox = getNormalizedBox(cropBox);
+        if (cropBox.w < 20 || cropBox.h < 20) {
+          if (cropStartSnapshot && cropStartSnapshot.w >= 20 && cropStartSnapshot.h >= 20) {
+            cropBox = { ...cropStartSnapshot };
+          } else {
+            initCropBox();
+          }
+        }
+      }
+      cropDragMode = null;
+      activeCropHandle = null;
+      cropStartSnapshot = null;
+      render();
+      return;
+    }
+
     if (currentTool === 'eraser' && isErasing) {
       isErasing = false;
       if (erasedInCurrentDrag) {
@@ -2028,8 +2491,17 @@
     render();
   }
 
-  // Double Click Handler for editing text annotation inline
+  // Double Click Handler for editing text annotation inline or applying crop
   function onDoubleClick(e) {
+    if (currentTool === 'crop' && cropBox) {
+      const coords = getCanvasCoordinates(e);
+      const bannerHeight = getBannerHeight();
+      if (isPointInCropBox(cropBox, coords.x, coords.y - bannerHeight)) {
+        applyCrop();
+        return;
+      }
+    }
+
     if (currentTool !== 'select') return;
     const coords = getCanvasCoordinates(e);
     const bannerHeight = getBannerHeight();
@@ -2056,7 +2528,7 @@
 
   // History Management
   function commitHistory() {
-    undoStack.push(cloneShapes(shapes));
+    undoStack.push({ shapes: cloneShapes(shapes), baseImage: baseImage });
     if (undoStack.length > MAX_HISTORY) {
       undoStack.shift();
     }
@@ -2071,7 +2543,11 @@
     const current = undoStack.pop();
     redoStack.push(current);
 
-    shapes = cloneShapes(undoStack[undoStack.length - 1]);
+    const prev = undoStack[undoStack.length - 1];
+    shapes = cloneShapes(prev.shapes || prev);
+    if (prev.baseImage) {
+      baseImage = prev.baseImage;
+    }
     renumberSteps(shapes);
     if (selectedShapeIndex >= shapes.length) {
       selectedShapeIndex = -1;
@@ -2088,7 +2564,10 @@
     const next = redoStack.pop();
     undoStack.push(next);
 
-    shapes = cloneShapes(next);
+    shapes = cloneShapes(next.shapes || next);
+    if (next.baseImage) {
+      baseImage = next.baseImage;
+    }
     renumberSteps(shapes);
     if (selectedShapeIndex >= shapes.length) {
       selectedShapeIndex = -1;
@@ -2128,6 +2607,20 @@
 
     const isCtrlOrMeta = e.ctrlKey || e.metaKey;
 
+    // Crop shortcuts: Enter to Apply, Escape to Cancel
+    if (currentTool === 'crop') {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        applyCrop();
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelCrop();
+        return;
+      }
+    }
+
     // Delete or Backspace key: Delete selected annotation
     if ((e.key === 'Delete' || e.key === 'Backspace') && !isCtrlOrMeta) {
       if (selectedShapeIndex >= 0 && selectedShapeIndex < shapes.length) {
@@ -2155,11 +2648,14 @@
       }
     }
 
-    // Tool shortcuts: V for Select, E for Eraser, R for Rectangle, O for Ellipse, L for Line, A for Arrow, H for Highlighter, B for Blur, T for Text, N for Step
+    // Tool shortcuts: V for Select, C for Crop, E for Eraser, R for Rectangle, O for Ellipse, L for Line, A for Arrow, H for Highlighter, B for Blur, T for Text, N for Step
     if (!isCtrlOrMeta && !e.altKey && !e.shiftKey) {
       const key = e.key.toLowerCase();
       if (key === 'v') {
         setTool('select');
+        return;
+      } else if (key === 'c') {
+        setTool('crop');
         return;
       } else if (key === 'e') {
         setTool('eraser');
@@ -2229,6 +2725,9 @@
 
   // Copy to Clipboard and Auto-Close
   async function copyToClipboard() {
+    if (currentTool === 'crop' && cropBox) {
+      applyCrop();
+    }
     commitActiveText();
     const prevSelected = selectedShapeIndex;
     const prevEraserHover = hoveredEraserIndex;
