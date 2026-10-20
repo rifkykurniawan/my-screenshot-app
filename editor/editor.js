@@ -284,32 +284,47 @@
     ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
     ctx.fillRect(x, y + height - 1, width, 1);
 
-    // Formatting date timestamp
+    // Formatting date timestamp reliably without locale truncation quirks
     const dateObj = new Date(capturedAt);
-    const dateStr = dateObj.toLocaleDateString('en-CA'); // YYYY-MM-DD
-    const timeStr = dateObj.toLocaleTimeString('en-GB', { hour12: false }); // HH:MM:SS
-    const formattedTimestamp = `${dateStr} ${timeStr}`;
+    const Y = dateObj.getFullYear();
+    const M = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const D = String(dateObj.getDate()).padStart(2, '0');
+    const h = String(dateObj.getHours()).padStart(2, '0');
+    const m = String(dateObj.getMinutes()).padStart(2, '0');
+    const s = String(dateObj.getSeconds()).padStart(2, '0');
 
-    const fontSize = Math.max(13, Math.round(height * 0.35));
+    let formattedTimestamp = `${Y}-${M}-${D} ${h}:${m}:${s}`;
+    if (width < 550 && width >= 380) {
+      formattedTimestamp = `${h}:${m}:${s}`;
+    } else if (width < 380 && width >= 260) {
+      formattedTimestamp = `${h}:${m}`;
+    } else if (width < 260) {
+      formattedTimestamp = '';
+    }
+
+    const fontSize = Math.max(12, Math.round(height * 0.35));
     ctx.font = `500 ${fontSize}px system-ui, -apple-system, sans-serif`;
 
-    // Measure timestamp width
-    const timeTextWidth = ctx.measureText(formattedTimestamp).width;
+    let timeTextWidth = 0;
     const marginX = Math.round(height * 0.4);
     const timeRightX = width - marginX;
 
-    // Draw Timestamp on the right
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#94a3b8';
-    ctx.fillText(formattedTimestamp, timeRightX, y + height / 2);
+    // Draw Timestamp on the right if space permits
+    if (formattedTimestamp) {
+      timeTextWidth = ctx.measureText(formattedTimestamp).width;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText(formattedTimestamp, timeRightX, y + height / 2);
+    }
 
     // Address Bar Pill Container
     const pillPaddingY = Math.max(4, Math.round(height * 0.15));
     const pillHeight = height - pillPaddingY * 2;
     const pillX = marginX;
-    const pillRightMargin = timeRightX - timeTextWidth - Math.round(height * 0.6);
-    const pillWidth = Math.max(120, pillRightMargin - pillX);
+    const gap = formattedTimestamp ? Math.round(height * 0.6) : 0;
+    const pillRightMargin = formattedTimestamp ? (timeRightX - timeTextWidth - gap) : (width - marginX);
+    const pillWidth = Math.max(80, pillRightMargin - pillX);
 
     // Pill background
     ctx.fillStyle = '#1e293b';
