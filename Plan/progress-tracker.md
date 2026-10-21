@@ -12,9 +12,9 @@ Mark `[x]` when a day is done.
 - [x] Day 7 (Mon Oct 19): Eraser, clear all, review (M1)
 
 ## Week 2: Capture modes (Oct 20-26)
-- [ ] Day 8 (Tue Oct 20): Crop
+- [x] Day 8 (Tue Oct 20): Crop
 - [ ] Day 9 (Wed Oct 21): Paste / drop image
-- [ ] Day 10 (Thu Oct 22): Select-area capture
+- [x] Day 10 (Thu Oct 22): Select-area capture
 - [ ] Day 11 (Fri Oct 23): Full-page capture
 - [ ] Day 12 (Sat Oct 24): Delayed capture
 - [ ] Day 13 (Sun Oct 25): Sunday rest / catch-up

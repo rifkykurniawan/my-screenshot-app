@@ -120,17 +120,19 @@ body {
 .tool-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-family: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 7px;
   color: var(--text-muted);
   background: transparent;
   border: 1px solid transparent;
-  padding: 4px 10px;
-  border-radius: 7px;
   cursor: pointer;
   transition: all 0.15s ease;
+  flex-shrink: 0;
 }
 
 .tool-btn:hover {
@@ -484,6 +486,75 @@ body {
   text-align: right;
 }
 
+/* Crop Toolbar Controls */
+.crop-controls {
+  display: none;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.crop-controls.crop-active {
+  display: flex;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #e2e8f0;
+}
+
+.crop-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #38bdf8;
+  padding: 2px 6px;
+  background: rgba(56, 189, 248, 0.12);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.btn-crop-action {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-crop-apply {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.btn-crop-apply:hover {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+.btn-crop-cancel {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+}
+
+.btn-crop-cancel:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
 /* URL Bar Toggle */
 .toggle-control {
   display: flex;
@@ -672,6 +743,10 @@ body {
   cursor: crosshair;
 }
 
+#screenshot-canvas.tool-crop {
+  cursor: crosshair;
+}
+
 /* Inline Text Annotation Input */
 .canvas-text-editor {
   position: absolute;
@@ -698,6 +773,101 @@ body {
 .canvas-text-editor::placeholder {
   color: rgba(255, 255, 255, 0.4);
   font-weight: 500;
+}
+
+/* Floating Crop Action Bar on Canvas */
+.crop-floating-bar {
+  position: absolute;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), 0 0 1px rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  z-index: 40;
+  pointer-events: auto;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.crop-floating-bar.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) scale(0.95);
+}
+
+.crop-floating-dim {
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #38bdf8;
+  letter-spacing: -0.01em;
+  padding: 0 2px;
+  white-space: nowrap;
+}
+
+.crop-floating-divider {
+  width: 1px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.crop-float-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.crop-float-apply {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: rgba(16, 185, 129, 0.45);
+  color: #34d399;
+}
+
+.crop-float-apply:hover {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+
+.crop-float-cancel {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text-muted);
+}
+
+.crop-float-cancel:hover {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #f87171;
+}
+
+.kbd-mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-family: monospace;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: inherit;
+  opacity: 0.85;
 }
 
 /* Toast Notification */
@@ -758,15 +928,6 @@ body {
 }
 
 /* Responsive adjustments to guarantee zero toolbar truncation */
-@media (max-width: 1650px) {
-  .tool-btn span {
-    display: none;
-  }
-  .tool-btn {
-    padding: 5px 8px;
-  }
-}
-
 @media (max-width: 1350px) {
   .badge-dimension {
     display: none;
