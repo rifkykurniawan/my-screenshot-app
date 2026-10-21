@@ -14,10 +14,10 @@ Main files: `background.js`, `popup/*`, `capture/*`, `manifest.json`, `editor/ed
 - **Done when:** an external image can be annotated.
 
 ## Day 10 (Thu Oct 22): Select-area capture
-- [ ] Inject an overlay with a content script to drag a region
-- [ ] Crop the visible capture to that region
-- [ ] Add a popup button and a shortcut
-- [ ] Possible new permission: `scripting`
+- [x] Inject an overlay with a content script to drag a region
+- [x] Crop the visible capture to that region
+- [x] Add a popup button and a shortcut
+- [x] Possible new permission: `scripting`
 - **Done when:** only the chosen region opens in the editor.
 
 ## Day 11 (Fri Oct 23): Full-page scrolling capture

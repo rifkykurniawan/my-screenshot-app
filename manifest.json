@@ -22,6 +22,7 @@
   },
   "permissions": [
     "activeTab",
+    "scripting",
     "storage",
     "unlimitedStorage",
     "windows"
@@ -40,6 +41,13 @@
         "mac": "Alt+Shift+W"
       },
       "description": "Capture window with DevTools and open editor"
+    },
+    "take-area-screenshot": {
+      "suggested_key": {
+        "default": "Alt+Shift+R",
+        "mac": "Alt+Shift+R"
+      },
+      "description": "Select an area of the page and open editor"
     }
   }
 }

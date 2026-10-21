@@ -2,6 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const btnNormal = document.getElementById('btn-mode-normal');
   const btnDevTools = document.getElementById('btn-mode-devtools');
+  const btnArea = document.getElementById('btn-mode-area');
 
   // Trigger Normal Viewport Capture
   btnNormal.addEventListener('click', async () => {
@@ -20,6 +21,17 @@ document.addEventListener('DOMContentLoaded', () => {
       await chrome.runtime.sendMessage({ action: 'capture-devtools' });
     } catch (err) {
       console.error('Error triggering devtools capture:', err);
+    } finally {
+      window.close();
+    }
+  });
+
+  // Trigger Select-area Capture
+  btnArea.addEventListener('click', async () => {
+    try {
+      await chrome.runtime.sendMessage({ action: 'capture-area' });
+    } catch (err) {
+      console.error('Error triggering area capture:', err);
     } finally {
       window.close();
     }

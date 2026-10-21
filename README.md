@@ -6,9 +6,11 @@ A lightweight, productivity-focused Chrome extension for capturing and annotatin
 
 ## Key Features
 
-- **Icon Popup Menu**: Quick access popup menu offering 2 capture modes:
+- **Icon Popup Menu**: Quick access popup menu offering 3 capture modes:
   - **Normal Viewport**: Instant screenshot of active tab webpage area (`Alt+Shift+S`).
   - **Include DevTools**: Full Chrome window capture including inspect element / DevTools panel and browser bar (`Alt+Shift+W`).
+  - **Select Area**: Drag a rectangle over the page to capture just that region (`Alt+Shift+R`).
+- **Select-area Capture**: A dimmed overlay shows a frozen copy of the page; drag the region you want and the crop opens directly in the editor. Press `Esc` to cancel.
 - **DevTools / Inspect Element Capture**: Captures the complete browser window with docked developer tools (Console, Network, Elements, etc.) without cropping.
 - **Top URL & Timestamp Header**: Automatically appends a clean browser-style top banner containing the source page URL and capture timestamp (YYYY-MM-DD HH:MM:SS) for viewport captures. Includes an on/off toggle in the toolbar.
 - **Annotation Tools (Select, Eraser, Rectangle, Ellipse, Line, Arrow, Step, Highlight, Blur, Text)**: 
@@ -58,6 +60,7 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 3. Select your desired capture mode:
    - **Normal Viewport**: Instantly captures the visible page area and opens the editor.
    - **Include DevTools**: A screen-picker prompt will appear. Under the **"Window"** tab, select your Chrome window and click **Share**.
+   - **Select Area**: The page dims with a frozen preview; drag a rectangle around the part you want (press `Esc` to cancel).
 4. Draw rectangles, ellipses, lines, arrows, highlights, or add text to point out details.
 5. Click **"Copy to Clipboard"** (or press `Ctrl + C` / `Enter`).
 6. Paste (`Ctrl + V` / `Cmd + V`) directly into Slack, Teams, Notion, Google Docs, GitHub, etc.
@@ -65,6 +68,7 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 ### Method 2: Using Keyboard Shortcuts
 - Press `Alt + Shift + S` anytime for **Normal Viewport** capture.
 - Press `Alt + Shift + W` anytime for **Include DevTools / Window** capture.
+- Press `Alt + Shift + R` anytime for **Select Area** capture.
 
 ---
 
@@ -73,6 +77,7 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 | Shortcut | Action |
 | :--- | :--- |
 | `Alt + Shift + S` *(Option+Shift+S on Mac)* | Capture active viewport & open editor |
+| `Alt + Shift + R` *(Option+Shift+R on Mac)* | Select an area of the page & open editor |
 | `Alt + Shift + W` *(Option+Shift+W on Mac)* | Capture window with DevTools & open editor |
 | `V` | Select tool (Click annotation to select, drag to move, drag handles to resize) |
 | `E` | Eraser tool (Click or drag across annotations to erase) |
@@ -104,9 +109,11 @@ my-screenshot-app/
 ├── manifest.json            # Chrome Manifest V3 configuration & permissions
 ├── background.js            # Service worker handling capture & tab orchestration
 ├── popup/                   # Extension toolbar menu popup
-│   ├── popup.html           # Popup markup with 2 capture mode options
+│   ├── popup.html           # Popup markup with 3 capture mode options
 │   ├── popup.css            # Dark mode styling for popup menu
 │   └── popup.js             # Mode selection event dispatcher
+├── content/                 # Injected select-area overlay
+│   └── area-select.js       # Drag-to-select region, crops the frozen capture
 ├── capture/                 # Window capture helper
 │   ├── capture.html         # Capture helper page
 │   └── capture.js           # getDisplayMedia frame grabber
