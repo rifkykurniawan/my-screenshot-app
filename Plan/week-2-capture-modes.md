@@ -21,8 +21,8 @@ Main files: `background.js`, `popup/*`, `capture/*`, `manifest.json`, `editor/ed
 - **Done when:** only the chosen region opens in the editor.
 
 ## Day 11 (Fri Oct 23): Full-page scrolling capture
-- [ ] Scroll the page and capture each slice
-- [ ] Stitch slices on a canvas, handling fixed headers
+- [x] Scroll the page and capture each slice
+- [x] Stitch slices on a canvas, handling fixed headers
 - **Done when:** a long page produces one tall image.
 
 ## Day 12 (Sat Oct 24): Delayed capture
