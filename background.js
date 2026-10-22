@@ -138,8 +138,84 @@ async function startAreaCapture() {
   }
 }
 
-// Opens the editor after the content script cropped the selected region
-async function openEditorFromArea(sender) {
+// Full-page Capture
+// Injects a content script that scrolls the page, asks the worker for viewport
+// slices, and stitches them into a single tall image
+async function startFullPageCapture() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab || typeof tab.id !== "number") {
+      console.warn("No active tab found for full-page capture.");
+      return;
+    }
+
+    if (!isCapturableUrl(tab.url)) {
+      console.warn("Cannot capture restricted Chrome system page:", tab.url);
+      return;
+    }
+
+    // Make sure the target window is in front before grabbing pixels
+    if (typeof tab.windowId === "number") {
+      await chrome.windows.update(tab.windowId, { focused: true }).catch(() => {});
+    }
+
+    await chrome.storage.local.set({
+      pendingFullPage: {
+        sourceUrl: tab.url || "",
+        sourceTitle: tab.title || "Screenshot",
+        capturedAt: Date.now()
+      }
+    });
+
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ["content/full-page.js"]
+      });
+    } catch (injectError) {
+      console.error("Failed to inject full-page capturer:", injectError);
+      await chrome.storage.local.remove("pendingFullPage");
+    }
+  } catch (error) {
+    console.error("Error during full-page capture:", error);
+  }
+}
+
+// captureVisibleTab is throttled to roughly two calls per second
+let lastSliceCapturedAt = 0;
+
+async function captureSliceForSender(sender) {
+  const tab = sender && sender.tab;
+  if (!tab || typeof tab.id !== "number") {
+    throw new Error("No tab available for slice capture.");
+  }
+
+  // Never capture a page the user has navigated away from
+  const [activeTab] = await chrome.tabs.query({ active: true, windowId: tab.windowId });
+  if (!activeTab || activeTab.id !== tab.id) {
+    throw new Error("The captured tab is no longer active.");
+  }
+
+  const wait = lastSliceCapturedAt + 550 - Date.now();
+  if (wait > 0) {
+    await new Promise((resolve) => setTimeout(resolve, wait));
+  }
+
+  let dataUrl;
+  try {
+    dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
+  } catch (firstError) {
+    // Rate limits or transient failures are common; retry once
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
+  }
+
+  lastSliceCapturedAt = Date.now();
+  return dataUrl;
+}
+
+// Opens the editor after a content script finished preparing the capture
+async function openEditorForSender(sender) {
   const editorUrl = chrome.runtime.getURL("editor/editor.html");
   const windowId = sender && sender.tab ? sender.tab.windowId : null;
 
@@ -166,11 +242,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message && message.action === "capture-area") {
     startAreaCapture();
     sendResponse({ status: "started" });
+  } else if (message && message.action === "capture-fullpage") {
+    startFullPageCapture();
+    sendResponse({ status: "started" });
+  } else if (message && message.action === "fullpage-slice") {
+    captureSliceForSender(sender)
+      .then((dataUrl) => sendResponse({ dataUrl: dataUrl }))
+      .catch((error) => sendResponse({ error: String((error && error.message) || error) }));
+    return true;
   } else if (message && message.action === "area-captured") {
-    openEditorFromArea(sender);
+    openEditorForSender(sender);
+    sendResponse({ status: "opening" });
+  } else if (message && message.action === "fullpage-captured") {
+    openEditorForSender(sender);
     sendResponse({ status: "opening" });
   } else if (message && message.action === "area-cancelled") {
     console.log("Area selection cancelled.");
+    sendResponse({ status: "cancelled" });
+  } else if (message && message.action === "fullpage-cancelled") {
+    console.log("Full-page capture cancelled.");
     sendResponse({ status: "cancelled" });
   }
   return true;
@@ -184,5 +274,7 @@ chrome.commands.onCommand.addListener((command) => {
     captureWindowWithDevTools();
   } else if (command === "take-area-screenshot") {
     startAreaCapture();
+  } else if (command === "take-fullpage-screenshot") {
+    startFullPageCapture();
   }
 });

@@ -48,6 +48,13 @@
         "mac": "Alt+Shift+R"
       },
       "description": "Select an area of the page and open editor"
+    },
+    "take-fullpage-screenshot": {
+      "suggested_key": {
+        "default": "Alt+Shift+F",
+        "mac": "Alt+Shift+F"
+      },
+      "description": "Capture the entire page by scrolling and open editor"
     }
   }
 }
