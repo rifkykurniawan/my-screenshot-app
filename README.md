@@ -1,16 +1,18 @@
 # Screen Snap & Rectangle Editor
 
-A lightweight, productivity-focused Chrome extension for capturing and annotating screenshots. Capture the current viewport, a selected region, an entire scrolling page, or the full Chrome window (including docked DevTools / Inspect Element), highlight content with crisp rectangles, and instantly copy the final image to the clipboard. The editor tab closes automatically so you can paste directly into chats, emails, documents, or task managers without saving files locally.
+A lightweight, productivity-focused Chrome extension for capturing and annotating screenshots. Capture the current viewport (instantly or on a timer), a selected region, an entire scrolling page, or the full Chrome window (including docked DevTools / Inspect Element), highlight content with crisp rectangles, and instantly copy the final image to the clipboard. The editor tab closes automatically so you can paste directly into chats, emails, documents, or task managers without saving files locally.
 
 ---
 
 ## Key Features
 
-- **Icon Popup Menu**: Quick access popup menu offering 4 capture modes:
+- **Icon Popup Menu**: Quick access popup menu offering 5 capture modes:
   - **Normal Viewport**: Instant screenshot of active tab webpage area (`Alt+Shift+S`).
   - **Include DevTools**: Full Chrome window capture including inspect element / DevTools panel and browser bar (`Alt+Shift+W`).
   - **Select Area**: Drag a rectangle over the page to capture just that region (`Alt+Shift+R`).
   - **Full Page**: Scroll and stitch the whole page into one tall image (`Alt+Shift+F`).
+  - **Delayed Capture**: Pick a 3s, 5s, or 10s timer and the viewport is captured when it ends.
+- **Delayed Capture**: A floating countdown badge (with a progress ring) sits on the page while the toolbar badge mirrors the remaining seconds, so you can open menus, hover states, or tooltips first. Click the badge or press `Esc` to cancel, and the countdown also stops if you switch tabs. The last used delay is remembered.
 - **Select-area Capture**: A dimmed overlay shows a frozen copy of the page; drag the region you want and the crop opens directly in the editor. Press `Esc` to cancel.
 - **Full-page Capture**: Scrolls the page automatically, grabs a slice per viewport, and stitches them on a canvas. Fixed/sticky headers are hidden after the first slice so they don't repeat, scrollbars are hidden, and your original scroll position is restored. Press `Esc` to cancel.
 - **DevTools / Inspect Element Capture**: Captures the complete browser window with docked developer tools (Console, Network, Elements, etc.) without cropping.
@@ -64,6 +66,7 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
    - **Include DevTools**: A screen-picker prompt will appear. Under the **"Window"** tab, select your Chrome window and click **Share**.
    - **Select Area**: The page dims with a frozen preview; drag a rectangle around the part you want (press `Esc` to cancel).
    - **Full Page**: The page scrolls automatically while each slice is captured, then the stitched tall image opens in the editor (press `Esc` to cancel).
+   - **Delayed Capture**: Pick **3s**, **5s**, or **10s**, then set up the page (open menus, expand sections) while the countdown badge ticks down. The viewport is captured when the timer ends (click the badge or press `Esc` to cancel).
 4. Draw rectangles, ellipses, lines, arrows, highlights, or add text to point out details.
 5. Click **"Copy to Clipboard"** (or press `Ctrl + C` / `Enter`).
 6. Paste (`Ctrl + V` / `Cmd + V`) directly into Slack, Teams, Notion, Google Docs, GitHub, etc.
@@ -114,11 +117,12 @@ my-screenshot-app/
 ├── manifest.json            # Chrome Manifest V3 configuration & permissions
 ├── background.js            # Service worker handling capture & tab orchestration
 ├── popup/                   # Extension toolbar menu popup
-│   ├── popup.html           # Popup markup with 4 capture mode options
+│   ├── popup.html           # Popup markup with 5 capture mode options
 │   ├── popup.css            # Dark mode styling for popup menu
 │   └── popup.js             # Mode selection event dispatcher
 ├── content/                 # Injected capture scripts
 │   ├── area-select.js       # Drag-to-select region, crops the frozen capture
+│   ├── delayed-capture.js   # On-page countdown badge for timed captures
 │   └── full-page.js         # Scrolls the page, stitches slices into one tall image
 ├── capture/                 # Window capture helper
 │   ├── capture.html         # Capture helper page
