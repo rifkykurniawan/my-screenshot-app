@@ -2,9 +2,13 @@
 
 Plan for building new features on top of Screen Snap (Chrome MV3 extension).
 
-- **Period:** Tue 2026-10-13 to Wed 2026-11-11 (30 calendar days)
-- **Schedule:** 6 working days per week, Sunday off (rest or catch-up)
-- **Working days:** 26 (Sundays: Oct 18, Oct 25, Nov 1, Nov 8)
+- **Period:** Tue 2026-10-13 to Tue 2026-11-10 (29 calendar days)
+- **Schedule:** one rest/catch-up day per cycle. Work ran a day ahead from Day 10,
+  so after Sun Oct 18 the rest days are Sat Oct 24, Sat Oct 31 and Sat Nov 7.
+- **Working days:** 26, of which Day 9 (paste / drop image) was skipped and is still unimplemented.
+
+> Timeline note: Day 12 (delayed capture) shipped on Fri Oct 23 instead of Sat Oct 24,
+> and Day 11 shipped Thu Oct 22, so every date from Day 10 onward moved one day earlier.
 
 ## Files
 | File | Days | Theme |
