@@ -26,8 +26,8 @@ Main files: `background.js`, `popup/*`, `capture/*`, `manifest.json`, `editor/ed
 - **Done when:** a long page produces one tall image.
 
 ## Day 12 (Sat Oct 24): Delayed capture
-- [ ] Add 3s/5s/10s timer options in the popup
-- [ ] Show a countdown badge
+- [x] Add 3s/5s/10s timer options in the popup
+- [x] Show a countdown badge
 - **Done when:** the capture fires after the chosen delay.
 
 ## Day 13 (Sun Oct 25): Sunday rest / catch-up

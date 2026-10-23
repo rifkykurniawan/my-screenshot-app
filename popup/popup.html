@@ -87,6 +87,25 @@
         </div>
         <div class="shortcut-tag">Alt+Shift+F</div>
       </button>
+
+      <!-- Mode 5: Delayed Capture -->
+      <div class="mode-card delayed-card" id="card-delayed">
+        <div class="mode-icon-wrapper delayed-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"></circle>
+            <polyline points="12 7 12 12 15.5 14"></polyline>
+          </svg>
+        </div>
+        <div class="mode-details">
+          <div class="mode-name">Delayed Capture</div>
+          <div class="mode-desc">Wait, then capture</div>
+        </div>
+        <div class="delay-chips" id="delay-chips" role="group" aria-label="Capture delay in seconds">
+          <button class="delay-chip" type="button" data-delay="3">3s</button>
+          <button class="delay-chip" type="button" data-delay="5">5s</button>
+          <button class="delay-chip" type="button" data-delay="10">10s</button>
+        </div>
+      </div>
     </div>
 
     <div class="popup-footer">

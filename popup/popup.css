@@ -129,6 +129,63 @@ body {
   background: rgba(251, 191, 36, 0.14);
 }
 
+.delayed-icon {
+  color: #f472b6;
+}
+
+.mode-card:hover .delayed-icon {
+  color: #f9a8d4;
+  background: rgba(244, 114, 182, 0.14);
+}
+
+/* The delayed card is a container: its chips trigger the capture */
+.delayed-card {
+  cursor: default;
+}
+
+.delayed-card:hover {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.08);
+  transform: none;
+}
+
+.delay-chips {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.delay-chip {
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 5px 6px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.delay-chip:hover {
+  color: #f9a8d4;
+  border-color: rgba(244, 114, 182, 0.6);
+  background: rgba(244, 114, 182, 0.14);
+}
+
+.delay-chip:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.7);
+  outline-offset: 1px;
+}
+
+.delay-chip.selected {
+  color: #0f172a;
+  background: #f472b6;
+  border-color: #f472b6;
+}
+
 .mode-details {
   flex: 1;
   min-width: 0;
