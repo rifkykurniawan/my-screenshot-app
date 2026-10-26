@@ -237,8 +237,28 @@
       </div>
     </div>
 
-    <!-- Primary Action: Copy & Auto Close -->
+    <!-- Export Actions: Save & Copy -->
     <div class="header-actions">
+      <div class="export-controls">
+        <select id="save-format" class="format-select" title="Save format" aria-label="Save format">
+          <option value="png" selected>PNG</option>
+          <option value="jpeg">JPEG</option>
+          <option value="webp">WebP</option>
+        </select>
+        <div class="quality-control hidden" id="quality-control" title="Export quality (JPEG / WebP)">
+          <input type="range" id="quality-slider" min="10" max="100" step="1" value="92" class="quality-slider" aria-label="Export quality">
+          <span id="quality-val" class="quality-badge">92%</span>
+        </div>
+      </div>
+      <button id="btn-save" class="btn-secondary" title="Save screenshot (Ctrl+S)">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>Save</span>
+        <kbd class="kbd-hint">Ctrl+S</kbd>
+      </button>
       <button id="btn-copy" class="btn-primary" title="Copy screenshot and close tab (Ctrl+C or Enter)">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>

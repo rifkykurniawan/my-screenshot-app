@@ -36,6 +36,11 @@
   const btnDelete = document.getElementById('btn-delete');
   const btnClear = document.getElementById('btn-clear');
   const btnCopy = document.getElementById('btn-copy');
+  const btnSave = document.getElementById('btn-save');
+  const saveFormatSelect = document.getElementById('save-format');
+  const qualityControl = document.getElementById('quality-control');
+  const qualitySlider = document.getElementById('quality-slider');
+  const qualityVal = document.getElementById('quality-val');
 
   // Drawing & State
   let currentTool = 'rectangle'; // 'select' | 'crop' | 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'step' | 'highlighter' | 'blur' | 'text'
@@ -51,6 +56,15 @@
   let startX = 0;
   let startY = 0;
   let activeTextInput = null;
+
+  // Export State
+  const SAVE_FORMATS = {
+    png: { label: 'PNG', mime: 'image/png', ext: 'png' },
+    jpeg: { label: 'JPEG', mime: 'image/jpeg', ext: 'jpg' },
+    webp: { label: 'WebP', mime: 'image/webp', ext: 'webp' },
+  };
+  let saveFormat = 'png';
+  let saveQuality = 0.92;
 
   // Crop State
   let cropBox = null; // { x, y, w, h } in screenshot baseImage coordinates
@@ -1865,6 +1879,25 @@
     btnClear.addEventListener('click', clearAll);
     btnCopy.addEventListener('click', copyToClipboard);
 
+    // Export format & quality
+    if (saveFormatSelect) {
+      saveFormatSelect.addEventListener('change', () => {
+        saveFormat = SAVE_FORMATS[saveFormatSelect.value] ? saveFormatSelect.value : 'png';
+        updateExportControls();
+      });
+    }
+    if (qualitySlider) {
+      qualitySlider.addEventListener('input', () => {
+        const val = parseInt(qualitySlider.value, 10) || 92;
+        saveQuality = val / 100;
+        if (qualityVal) qualityVal.textContent = `${val}%`;
+      });
+    }
+    if (btnSave) {
+      btnSave.addEventListener('click', saveScreenshot);
+    }
+    updateExportControls();
+
     // Crop action buttons
     if (btnCropApply) btnCropApply.addEventListener('click', applyCrop);
     if (btnCropCancel) btnCropCancel.addEventListener('click', cancelCrop);
@@ -2615,12 +2648,19 @@
 
   // Keyboard Shortcuts Handler
   function onKeyDown(e) {
+    const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+
+    // Ctrl+S: Save screenshot (works even while a slider or text input is focused)
+    if (isCtrlOrMeta && !e.shiftKey && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      saveScreenshot();
+      return;
+    }
+
     // If typing inside an input or textarea, do not intercept keystrokes
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
       return;
     }
-
-    const isCtrlOrMeta = e.ctrlKey || e.metaKey;
 
     // Crop shortcuts: Enter to Apply, Escape to Cancel
     if (currentTool === 'crop') {
@@ -2806,6 +2846,121 @@
         <span>Copy to Clipboard</span>
         <kbd class="kbd-hint">Ctrl+C</kbd>
       `;
+    }
+  }
+
+  function updateExportControls() {
+    const format = SAVE_FORMATS[saveFormat] || SAVE_FORMATS.png;
+    if (qualityControl) {
+      qualityControl.classList.toggle('hidden', format.mime === 'image/png');
+    }
+  }
+
+  function buildExportFilename(ext) {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+    return `screen-snap_${stamp}.${ext}`;
+  }
+
+  function createExportCanvas(mime) {
+    // JPEG has no alpha channel, so flatten transparency onto white first
+    if (mime !== 'image/jpeg') return canvas;
+
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = canvas.width;
+    exportCanvas.height = canvas.height;
+    const exportCtx = exportCanvas.getContext('2d');
+    exportCtx.fillStyle = '#ffffff';
+    exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+    exportCtx.drawImage(canvas, 0, 0);
+    return exportCanvas;
+  }
+
+  function canvasToBlob(targetCanvas, mime, quality) {
+    return new Promise((resolve, reject) => {
+      targetCanvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error(`Failed to encode ${mime}.`));
+      }, mime, quality);
+    });
+  }
+
+  async function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    try {
+      if (typeof chrome !== 'undefined' && chrome.downloads && chrome.downloads.download) {
+        await new Promise((resolve, reject) => {
+          chrome.downloads.download({ url, filename, saveAs: false }, (downloadId) => {
+            const runtimeError = chrome.runtime.lastError;
+            if (runtimeError || downloadId === undefined) {
+              reject(new Error(runtimeError ? runtimeError.message : 'Download failed.'));
+              return;
+            }
+            resolve(downloadId);
+          });
+        });
+      } else {
+        // Fallback for opening the editor outside the extension context
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+    } finally {
+      // Keep the blob alive long enough for the browser to begin the download
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }
+  }
+
+  async function saveScreenshot() {
+    if (!baseImage || !btnSave || btnSave.disabled) return;
+
+    if (currentTool === 'crop' && cropBox) {
+      applyCrop();
+    }
+    commitActiveText();
+
+    // Hide selection chrome so it never appears in the exported file
+    const prevSelected = selectedShapeIndex;
+    const prevEraserHover = hoveredEraserIndex;
+    if (selectedShapeIndex >= 0) {
+      selectedShapeIndex = -1;
+    }
+    hoveredEraserIndex = -1;
+    render();
+
+    const originalMarkup = btnSave.innerHTML;
+    btnSave.disabled = true;
+    btnSave.innerHTML = `
+      <svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
+        <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path>
+      </svg>
+      <span>Saving...</span>
+    `;
+
+    try {
+      const format = SAVE_FORMATS[saveFormat] || SAVE_FORMATS.png;
+      const exportCanvas = createExportCanvas(format.mime);
+      const blob = await canvasToBlob(exportCanvas, format.mime, saveQuality);
+      const filename = buildExportFilename(format.ext);
+      await downloadBlob(blob, filename);
+      showToast('Screenshot Saved!', `${filename} (${format.label})`);
+    } catch (err) {
+      console.error('Save error:', err);
+      showToast('Save Failed', 'Could not export the screenshot. Please try again.');
+    } finally {
+      if (prevSelected >= 0 && prevSelected < shapes.length) {
+        selectedShapeIndex = prevSelected;
+      }
+      hoveredEraserIndex = prevEraserHover;
+      render();
+      btnSave.disabled = false;
+      btnSave.innerHTML = originalMarkup;
     }
   }
 

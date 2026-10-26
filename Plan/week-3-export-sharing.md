@@ -4,9 +4,9 @@ Goal: get the image out of the editor in more ways than the clipboard.
 Main files: `editor/editor.js`, `editor/editor.html`, `manifest.json`.
 
 ## Day 15 (Mon Oct 26): Save as PNG/JPEG/WebP
-- [ ] Add a Save button and `Ctrl+S`
-- [ ] Add a format selector and a quality slider
-- [ ] Add the `downloads` permission (or use an anchor download)
+- [x] Add a Save button and `Ctrl+S`
+- [x] Add a format selector and a quality slider
+- [x] Add the `downloads` permission (or use an anchor download)
 - **Done when:** a file is saved in each format.
 
 ## Day 16 (Tue Oct 27): Export to PDF
