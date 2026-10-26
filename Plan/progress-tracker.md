@@ -20,11 +20,11 @@ Mark `[x]` when a day is done.
 - [x] Day 10 (Wed Oct 21): Select-area capture
 - [x] Day 11 (Thu Oct 22): Full-page capture
 - [x] Day 12 (Fri Oct 23): Delayed capture
-- [ ] Day 13 (Sat Oct 24): Rest / catch-up
-- [ ] Day 14 (Sun Oct 25): Capture history (M2)
+- [x] Day 13 (Sat Oct 24): Rest / catch-up
+- [x] Day 14 (Sun Oct 25): Capture history (M2)
 
 ## Week 3: Export and sharing (Oct 26 - Nov 1)
-- [ ] Day 15 (Mon Oct 26): Save as PNG/JPEG/WebP
+- [x] Day 15 (Mon Oct 26): Save as PNG/JPEG/WebP
 - [ ] Day 16 (Tue Oct 27): PDF export
 - [ ] Day 17 (Wed Oct 28): Copy as Markdown / base64
 - [ ] Day 18 (Thu Oct 29): Filename templates

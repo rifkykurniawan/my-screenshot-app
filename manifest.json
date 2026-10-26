@@ -25,7 +25,8 @@
     "scripting",
     "storage",
     "unlimitedStorage",
-    "windows"
+    "windows",
+    "downloads"
   ],
   "commands": {
     "take-screenshot": {
