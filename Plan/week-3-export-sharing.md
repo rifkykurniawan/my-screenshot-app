@@ -10,7 +10,7 @@ Main files: `editor/editor.js`, `editor/editor.html`, `manifest.json`.
 - **Done when:** a file is saved in each format.
 
 ## Day 16 (Tue Oct 27): Export to PDF
-- [ ] Generate a single-page PDF from the canvas (small local library or manual PDF writer)
+- [x] Generate a single-page PDF from the canvas (small local library or manual PDF writer)
 - **Done when:** the PDF opens with the full image.
 
 ## Day 17 (Wed Oct 28): Copy as Markdown / base64

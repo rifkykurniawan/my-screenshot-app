@@ -62,6 +62,7 @@
     png: { label: 'PNG', mime: 'image/png', ext: 'png' },
     jpeg: { label: 'JPEG', mime: 'image/jpeg', ext: 'jpg' },
     webp: { label: 'WebP', mime: 'image/webp', ext: 'webp' },
+    pdf: { label: 'PDF', mime: 'application/pdf', ext: 'pdf' },
   };
   let saveFormat = 'png';
   let saveQuality = 0.92;
@@ -2886,6 +2887,83 @@
     });
   }
 
+  // Writes a minimal single-page PDF whose page exactly holds the image, so no
+  // external library (or script CSP change) is needed.
+  function createPdfBlob(jpegBytes, pixelWidth, pixelHeight) {
+    const encoder = new TextEncoder();
+    const chunks = [];
+    let byteLength = 0;
+
+    const push = (data) => {
+      const bytes = typeof data === 'string' ? encoder.encode(data) : data;
+      chunks.push(bytes);
+      byteLength += bytes.length;
+    };
+
+    // CSS pixels are 96 per inch, PDF points are 72 per inch
+    const pointsPerPixel = 72 / 96;
+    const maxPageSize = 14400; // PDF viewers reject larger pages (200 in)
+    const maxSide = Math.max(pixelWidth, pixelHeight) * pointsPerPixel;
+    const scale = maxSide > maxPageSize ? maxPageSize / maxSide : 1;
+    const pageWidth = pixelWidth * pointsPerPixel * scale;
+    const pageHeight = pixelHeight * pointsPerPixel * scale;
+    const dim = (n) => (Math.round(n * 100) / 100).toString();
+
+    const content = `q\n${dim(pageWidth)} 0 0 ${dim(pageHeight)} 0 0 cm\n/Im0 Do\nQ\n`;
+    const offsets = [];
+
+    const beginObject = (id) => {
+      offsets[id] = byteLength;
+      push(`${id} 0 obj\n`);
+    };
+    const endObject = () => push('endobj\n');
+
+    push('%PDF-1.4\n');
+    push(new Uint8Array([0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a])); // binary marker
+
+    beginObject(1);
+    push('<< /Type /Catalog /Pages 2 0 R >>\n');
+    endObject();
+
+    beginObject(2);
+    push('<< /Type /Pages /Kids [3 0 R] /Count 1 >>\n');
+    endObject();
+
+    beginObject(3);
+    push(
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${dim(pageWidth)} ${dim(pageHeight)}] ` +
+      `/Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>\n`
+    );
+    endObject();
+
+    beginObject(4);
+    push(`<< /Length ${encoder.encode(content).length} >>\nstream\n`);
+    push(content);
+    push('endstream\n');
+    endObject();
+
+    beginObject(5);
+    push(
+      `<< /Type /XObject /Subtype /Image /Width ${pixelWidth} /Height ${pixelHeight} ` +
+      `/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\n` +
+      'stream\n'
+    );
+    push(jpegBytes);
+    push('\nendstream\n');
+    endObject();
+
+    const xrefOffset = byteLength;
+    const pad10 = (n) => String(n).padStart(10, '0');
+    let xref = `xref\n0 ${offsets.length}\n0000000000 65535 f\r\n`;
+    for (let id = 1; id < offsets.length; id += 1) {
+      xref += `${pad10(offsets[id])} 00000 n\r\n`;
+    }
+    push(xref);
+    push(`trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`);
+
+    return new Blob(chunks, { type: 'application/pdf' });
+  }
+
   async function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     try {
@@ -2945,8 +3023,17 @@
 
     try {
       const format = SAVE_FORMATS[saveFormat] || SAVE_FORMATS.png;
-      const exportCanvas = createExportCanvas(format.mime);
-      const blob = await canvasToBlob(exportCanvas, format.mime, saveQuality);
+      let blob;
+      if (format.mime === 'application/pdf') {
+        // PDF embeds the image as JPEG, so flatten onto white and reuse the quality slider
+        const exportCanvas = createExportCanvas('image/jpeg');
+        const jpegBlob = await canvasToBlob(exportCanvas, 'image/jpeg', saveQuality);
+        const jpegBytes = new Uint8Array(await jpegBlob.arrayBuffer());
+        blob = createPdfBlob(jpegBytes, exportCanvas.width, exportCanvas.height);
+      } else {
+        const exportCanvas = createExportCanvas(format.mime);
+        blob = await canvasToBlob(exportCanvas, format.mime, saveQuality);
+      }
       const filename = buildExportFilename(format.ext);
       await downloadBlob(blob, filename);
       showToast('Screenshot Saved!', `${filename} (${format.label})`);

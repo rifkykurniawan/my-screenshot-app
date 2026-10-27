@@ -25,7 +25,7 @@ Mark `[x]` when a day is done.
 
 ## Week 3: Export and sharing (Oct 26 - Nov 1)
 - [x] Day 15 (Mon Oct 26): Save as PNG/JPEG/WebP
-- [ ] Day 16 (Tue Oct 27): PDF export
+- [x] Day 16 (Tue Oct 27): PDF export
 - [ ] Day 17 (Wed Oct 28): Copy as Markdown / base64
 - [ ] Day 18 (Thu Oct 29): Filename templates
 - [ ] Day 19 (Fri Oct 30): Upload endpoint
