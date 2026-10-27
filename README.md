@@ -1,6 +1,6 @@
 # Screen Snap & Rectangle Editor
 
-A lightweight, productivity-focused Chrome extension for capturing and annotating screenshots. Capture the current viewport (instantly or on a timer), a selected region, an entire scrolling page, or the full Chrome window (including docked DevTools / Inspect Element), highlight content with crisp rectangles, then copy the final image to the clipboard or save it as PNG, JPEG, or WebP. The editor tab closes automatically after copying so you can paste directly into chats, emails, documents, or task managers.
+A lightweight, productivity-focused Chrome extension for capturing and annotating screenshots. Capture the current viewport (instantly or on a timer), a selected region, an entire scrolling page, or the full Chrome window (including docked DevTools / Inspect Element), highlight content with crisp rectangles, then copy the final image to the clipboard or save it as PNG, JPEG, WebP, or PDF. The editor tab closes automatically after copying so you can paste directly into chats, emails, documents, or task managers.
 
 ---
 
@@ -32,7 +32,7 @@ A lightweight, productivity-focused Chrome extension for capturing and annotatin
 - **Adjustable Stroke / Font Size**: Choose from 4 line weights & corresponding font sizes (Thin: 2px / 16px, Medium: 4px / 22px, Thick: 7px / 32px, Bold: 11px / 44px).
 - **History & Undo/Redo**: Full undo (`Ctrl+Z`) and redo (`Ctrl+Y` / `Ctrl+Shift+Z`) support with state preservation when toggling the URL header.
 - **One-Click Copy & Auto-Close**: Click **Copy to Clipboard** or press `Ctrl+C` / `Enter`. The PNG image is written directly to your system clipboard, and the tab closes automatically after confirmation.
-- **Save as PNG / JPEG / WebP**: Click **Save** or press `Ctrl+S`, pick a format from the selector, and adjust the quality slider for lossy formats. JPEG exports are flattened onto white so transparent regions never turn black. Files download directly to your Downloads folder with a timestamped name.
+- **Save as PNG / JPEG / WebP / PDF**: Click **Save** or press `Ctrl+S`, pick a format from the selector, and adjust the quality slider for lossy formats. JPEG and PDF exports are flattened onto white so transparent regions never turn black. PDF exports produce a single page that exactly fits the annotated image, ready to attach to emails, tickets, or reports. Files download directly to your Downloads folder with a timestamped name.
 - **100% Local & Privacy-Friendly**: Runs entirely in your browser without external servers, telemetry, or tracking.
 
 ---
@@ -103,7 +103,7 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 | `Enter` *(while typing text)* | Commit text annotation |
 | `Shift + Enter` *(while typing text)* | Insert newline in text annotation |
 | `Ctrl + C` or `Enter` *(Cmd+C on Mac)* | Copy screenshot to clipboard & auto-close tab |
-| `Ctrl + S` *(Cmd+S on Mac)* | Save screenshot in the selected format (PNG / JPEG / WebP) |
+| `Ctrl + S` *(Cmd+S on Mac)* | Save screenshot in the selected format (PNG / JPEG / WebP / PDF) |
 | `Ctrl + Z` *(Cmd+Z on Mac)* | Undo last annotation |
 | `Ctrl + Y` or `Ctrl + Shift + Z` | Redo annotation |
 | `Escape` | Cancel current drawing drag, deselect annotation, or dismiss active text |
@@ -119,7 +119,7 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 | `activeTab`, `scripting` | Capture and annotate the current tab |
 | `storage`, `unlimitedStorage` | Keep the latest screenshot and editor state |
 | `windows` | Window capture mode |
-| `downloads` | Save the annotated image as PNG, JPEG, or WebP (only when you press Save) |
+| `downloads` | Save the annotated image as PNG, JPEG, WebP, or PDF (only when you press Save) |
 
 ---
 
