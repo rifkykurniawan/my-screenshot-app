@@ -41,6 +41,12 @@
   const qualityControl = document.getElementById('quality-control');
   const qualitySlider = document.getElementById('quality-slider');
   const qualityVal = document.getElementById('quality-val');
+  const btnFilenameTemplate = document.getElementById('btn-filename-template');
+  const templatePanel = document.getElementById('filename-template-panel');
+  const templateInput = document.getElementById('filename-template');
+  const templateTokens = document.getElementById('template-tokens');
+  const templatePreview = document.getElementById('template-preview');
+  const btnTemplateReset = document.getElementById('btn-template-reset');
 
   // Drawing & State
   let currentTool = 'rectangle'; // 'select' | 'crop' | 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'step' | 'highlighter' | 'blur' | 'text'
@@ -66,6 +72,13 @@
   };
   let saveFormat = 'png';
   let saveQuality = 0.92;
+
+  // Filename Template State
+  const DEFAULT_FILENAME_TEMPLATE = 'screen-snap_{date}_{time}';
+  const FILENAME_TEMPLATE_STORAGE_KEY = 'filenameTemplate';
+  const MAX_FILENAME_LENGTH = 120;
+  let filenameTemplate = DEFAULT_FILENAME_TEMPLATE;
+  let templateSaveTimer = null;
 
   // Crop State
   let cropBox = null; // { x, y, w, h } in screenshot baseImage coordinates
@@ -122,6 +135,7 @@
     setTool(currentTool);
     updateHistoryButtons();
     await loadScreenshot();
+    await loadFilenameTemplate();
   }
 
   // Load screenshot and metadata from chrome.storage.local
@@ -1899,6 +1913,51 @@
     }
     updateExportControls();
 
+    // Filename template popover
+    if (btnFilenameTemplate && templatePanel) {
+      btnFilenameTemplate.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (templatePanel.classList.contains('hidden')) {
+          openTemplatePanel();
+        } else {
+          closeTemplatePanel();
+        }
+      });
+    }
+    if (templateInput) {
+      templateInput.addEventListener('input', () => {
+        filenameTemplate = templateInput.value;
+        updateTemplatePreview();
+        scheduleTemplateSave();
+      });
+      templateInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          templateInput.blur();
+        }
+      });
+    }
+    if (templateTokens) {
+      templateTokens.addEventListener('click', (e) => {
+        const chip = e.target.closest('.token-chip');
+        if (chip) insertTemplateToken(chip.dataset.token || '');
+      });
+    }
+    if (btnTemplateReset) {
+      btnTemplateReset.addEventListener('click', () => {
+        filenameTemplate = DEFAULT_FILENAME_TEMPLATE;
+        if (templateInput) templateInput.value = filenameTemplate;
+        updateTemplatePreview();
+        saveFilenameTemplate(filenameTemplate);
+      });
+    }
+    document.addEventListener('mousedown', (e) => {
+      if (!templatePanel || templatePanel.classList.contains('hidden')) return;
+      if (templatePanel.contains(e.target)) return;
+      if (btnFilenameTemplate && btnFilenameTemplate.contains(e.target)) return;
+      closeTemplatePanel();
+    });
+
     // Crop action buttons
     if (btnCropApply) btnCropApply.addEventListener('click', applyCrop);
     if (btnCropCancel) btnCropCancel.addEventListener('click', cancelCrop);
@@ -2658,6 +2717,14 @@
       return;
     }
 
+    // Escape closes the filename template popover
+    if (e.key === 'Escape' && templatePanel && !templatePanel.classList.contains('hidden')) {
+      e.preventDefault();
+      closeTemplatePanel();
+      if (templateInput) templateInput.blur();
+      return;
+    }
+
     // If typing inside an input or textarea, do not intercept keystrokes
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
       return;
@@ -2855,13 +2922,134 @@
     if (qualityControl) {
       qualityControl.classList.toggle('hidden', format.mime === 'image/png');
     }
+    updateTemplatePreview();
   }
 
-  function buildExportFilename(ext) {
+  // Removes characters that browsers or file systems reject in download names
+  function sanitizeFilenamePart(value) {
+    return String(value == null ? '' : value)
+      .replace(/[\u0000-\u001f\u007f]/g, '')
+      .replace(/[\\/:*?"<>|]/g, '-')
+      .replace(/\s+/g, ' ')
+      // Empty tokens can leave doubled separators behind, so squash each run
+      .replace(/[_\-. ]{2,}/g, (run) => run[0])
+      .replace(/^[\s._-]+|[\s._-]+$/g, '');
+  }
+
+  function getDomainToken() {
+    if (!sourceUrl) return '';
+    try {
+      return (new URL(sourceUrl).hostname || '').replace(/^www\./i, '');
+    } catch (err) {
+      return '';
+    }
+  }
+
+  function resolveFilenameTemplate(template, ext, width, height) {
     const now = new Date();
     const pad = (n) => String(n).padStart(2, '0');
-    const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
-    return `screen-snap_${stamp}.${ext}`;
+    const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const time = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+    const values = {
+      domain: getDomainToken(),
+      title: sourceTitle || '',
+      date,
+      time,
+      datetime: `${date}_${time}`,
+      timestamp: String(now.getTime()),
+      width: String(width || 0),
+      height: String(height || 0),
+      ext,
+      format: ext,
+    };
+
+    const resolved = String(template && template.trim() ? template : DEFAULT_FILENAME_TEMPLATE)
+      .replace(/\{(\w+)\}/g, (match, key) => (
+        Object.prototype.hasOwnProperty.call(values, key.toLowerCase()) ? values[key.toLowerCase()] : match
+      ));
+
+    const maxBaseLength = MAX_FILENAME_LENGTH - ext.length - 1;
+    let base = sanitizeFilenamePart(resolved);
+    if (base.length > maxBaseLength) {
+      base = sanitizeFilenamePart(base.slice(0, maxBaseLength));
+    }
+    return `${base || 'screenshot'}.${ext}`;
+  }
+
+  function buildExportFilename(ext, width, height) {
+    return resolveFilenameTemplate(filenameTemplate, ext, width || canvas.width, height || canvas.height);
+  }
+
+  function updateTemplatePreview() {
+    if (!templatePreview) return;
+    const format = SAVE_FORMATS[saveFormat] || SAVE_FORMATS.png;
+    templatePreview.textContent = resolveFilenameTemplate(filenameTemplate, format.ext, canvas.width, canvas.height);
+  }
+
+  function saveFilenameTemplate(value) {
+    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) return;
+    try {
+      const result = chrome.storage.local.set({ [FILENAME_TEMPLATE_STORAGE_KEY]: value });
+      if (result && typeof result.catch === 'function') result.catch(() => {});
+    } catch (err) {
+      console.error('Error saving filename template:', err);
+    }
+  }
+
+  function scheduleTemplateSave() {
+    if (templateSaveTimer) clearTimeout(templateSaveTimer);
+    templateSaveTimer = setTimeout(() => {
+      templateSaveTimer = null;
+      saveFilenameTemplate(filenameTemplate);
+    }, 350);
+  }
+
+  async function loadFilenameTemplate() {
+    if (templateInput) {
+      let stored = null;
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        try {
+          const data = await chrome.storage.local.get([FILENAME_TEMPLATE_STORAGE_KEY]);
+          stored = data ? data[FILENAME_TEMPLATE_STORAGE_KEY] : null;
+        } catch (err) {
+          stored = null;
+        }
+      }
+      filenameTemplate = typeof stored === 'string' && stored.trim() ? stored.trim() : DEFAULT_FILENAME_TEMPLATE;
+      templateInput.value = filenameTemplate;
+    }
+    updateTemplatePreview();
+  }
+
+  function openTemplatePanel() {
+    if (!templatePanel) return;
+    updateTemplatePreview();
+    templatePanel.classList.remove('hidden');
+    if (btnFilenameTemplate) btnFilenameTemplate.setAttribute('aria-expanded', 'true');
+    if (templateInput) {
+      templateInput.focus();
+      templateInput.select();
+    }
+  }
+
+  function closeTemplatePanel() {
+    if (!templatePanel) return;
+    templatePanel.classList.add('hidden');
+    if (btnFilenameTemplate) btnFilenameTemplate.setAttribute('aria-expanded', 'false');
+  }
+
+  function insertTemplateToken(token) {
+    if (!templateInput || !token) return;
+    const value = templateInput.value;
+    const start = typeof templateInput.selectionStart === 'number' ? templateInput.selectionStart : value.length;
+    const end = typeof templateInput.selectionEnd === 'number' ? templateInput.selectionEnd : start;
+    templateInput.value = value.slice(0, start) + token + value.slice(end);
+    const caret = start + token.length;
+    templateInput.focus();
+    templateInput.setSelectionRange(caret, caret);
+    filenameTemplate = templateInput.value;
+    updateTemplatePreview();
+    scheduleTemplateSave();
   }
 
   function createExportCanvas(mime) {
@@ -3024,17 +3212,23 @@
     try {
       const format = SAVE_FORMATS[saveFormat] || SAVE_FORMATS.png;
       let blob;
+      let exportWidth = canvas.width;
+      let exportHeight = canvas.height;
       if (format.mime === 'application/pdf') {
         // PDF embeds the image as JPEG, so flatten onto white and reuse the quality slider
         const exportCanvas = createExportCanvas('image/jpeg');
+        exportWidth = exportCanvas.width;
+        exportHeight = exportCanvas.height;
         const jpegBlob = await canvasToBlob(exportCanvas, 'image/jpeg', saveQuality);
         const jpegBytes = new Uint8Array(await jpegBlob.arrayBuffer());
         blob = createPdfBlob(jpegBytes, exportCanvas.width, exportCanvas.height);
       } else {
         const exportCanvas = createExportCanvas(format.mime);
+        exportWidth = exportCanvas.width;
+        exportHeight = exportCanvas.height;
         blob = await canvasToBlob(exportCanvas, format.mime, saveQuality);
       }
-      const filename = buildExportFilename(format.ext);
+      const filename = buildExportFilename(format.ext, exportWidth, exportHeight);
       await downloadBlob(blob, filename);
       showToast('Screenshot Saved!', `${filename} (${format.label})`);
     } catch (err) {

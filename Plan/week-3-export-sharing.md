@@ -18,8 +18,8 @@ Main files: `editor/editor.js`, `editor/editor.html`, `manifest.json`.
 - **Done when:** each option pastes the right content.
 
 ## Day 18 (Thu Oct 29): Filename templates
-- [ ] Add a template such as `{domain}_{date}_{time}`
-- [ ] Sanitize invalid characters
+- [x] Add a template such as `{domain}_{date}_{time}`
+- [x] Sanitize invalid characters
 - **Done when:** saved files follow the template.
 
 ## Day 19 (Fri Oct 30): Upload to custom endpoint

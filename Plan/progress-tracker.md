@@ -27,7 +27,7 @@ Mark `[x]` when a day is done.
 - [x] Day 15 (Mon Oct 26): Save as PNG/JPEG/WebP
 - [x] Day 16 (Tue Oct 27): PDF export
 - [ ] Day 17 (Wed Oct 28): Copy as Markdown / base64
-- [ ] Day 18 (Thu Oct 29): Filename templates
+- [x] Day 18 (Thu Oct 29): Filename templates
 - [ ] Day 19 (Fri Oct 30): Upload endpoint
 - [ ] Day 20 (Sat Oct 31): Rest / catch-up
 - [ ] Day 21 (Sun Nov 1): Export review (M3)
