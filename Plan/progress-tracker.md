@@ -3,7 +3,8 @@
 Mark `[x]` when a day is done.
 
 > Timeline runs one day ahead from Day 10: Day 12 (delayed capture) shipped Fri Oct 23,
-> and the rest days are now Sat Oct 24, Oct 31 and Nov 7. Day 9 was skipped.
+> and the rest days are now Sat Oct 24, Oct 31 and Nov 7. Day 9 was skipped, and
+> Day 17 (copy as Markdown / base64) was dropped, so the plan now ends on Day 29.
 
 ## Week 1: Annotation tools (Oct 13-19)
 - [x] Day 1 (Tue Oct 13): Line and ellipse
@@ -26,28 +27,27 @@ Mark `[x]` when a day is done.
 ## Week 3: Export and sharing (Oct 26 - Nov 1)
 - [x] Day 15 (Mon Oct 26): Save as PNG/JPEG/WebP
 - [x] Day 16 (Tue Oct 27): PDF export
-- [ ] Day 17 (Wed Oct 28): Copy as Markdown / base64
-- [x] Day 18 (Thu Oct 29): Filename templates
-- [ ] Day 19 (Fri Oct 30): Upload endpoint
-- [ ] Day 20 (Sat Oct 31): Rest / catch-up
-- [ ] Day 21 (Sun Nov 1): Export review (M3)
+- [x] Day 17 (Thu Oct 29): Filename templates
+- [ ] Day 18 (Fri Oct 30): Upload endpoint
+- [ ] Day 19 (Sat Oct 31): Rest / catch-up
+- [ ] Day 20 (Sun Nov 1): Export review (M3)
 
 ## Week 4: Advanced editing (Nov 2-8)
-- [ ] Day 22 (Mon Nov 2): Zoom and pan
-- [ ] Day 23 (Tue Nov 3): Beautify mode
-- [ ] Day 24 (Wed Nov 4): Frames
-- [ ] Day 25 (Thu Nov 5): Stickers and watermark
-- [ ] Day 26 (Fri Nov 6): Text styles
-- [ ] Day 27 (Sat Nov 7): Rest / catch-up
-- [ ] Day 28 (Sun Nov 8): Layers panel (M4)
+- [ ] Day 21 (Mon Nov 2): Zoom and pan
+- [ ] Day 22 (Tue Nov 3): Beautify mode
+- [ ] Day 23 (Wed Nov 4): Frames
+- [ ] Day 24 (Thu Nov 5): Stickers and watermark
+- [ ] Day 25 (Fri Nov 6): Text styles
+- [ ] Day 26 (Sat Nov 7): Rest / catch-up
+- [ ] Day 27 (Sun Nov 8): Layers panel (M4)
 
 ## Week 5: Release (Nov 9-10)
-- [ ] Day 29 (Mon Nov 9): Options page, shortcuts, theme
-- [ ] Day 30 (Tue Nov 10): Testing and v2.0 release (M5)
+- [ ] Day 28 (Mon Nov 9): Options page, shortcuts, theme
+- [ ] Day 29 (Tue Nov 10): Testing and v2.0 release (M5)
 
 ## Milestones
 - [x] M1 Annotation tools (Day 7, Mon Oct 19)
 - [ ] M2 Capture modes (Day 14, Sun Oct 25)
-- [ ] M3 Export and sharing (Day 21, Sun Nov 1)
-- [ ] M4 Advanced editing (Day 28, Sun Nov 8)
-- [ ] M5 v2.0 release (Day 30, Tue Nov 10)
+- [ ] M3 Export and sharing (Day 20, Sun Nov 1)
+- [ ] M4 Advanced editing (Day 27, Sun Nov 8)
+- [ ] M5 v2.0 release (Day 29, Tue Nov 10)
