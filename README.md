@@ -32,7 +32,7 @@ A lightweight, productivity-focused Chrome extension for capturing and annotatin
 - **Adjustable Stroke / Font Size**: Choose from 4 line weights & corresponding font sizes (Thin: 2px / 16px, Medium: 4px / 22px, Thick: 7px / 32px, Bold: 11px / 44px).
 - **History & Undo/Redo**: Full undo (`Ctrl+Z`) and redo (`Ctrl+Y` / `Ctrl+Shift+Z`) support with state preservation when toggling the URL header.
 - **One-Click Copy & Auto-Close**: Click **Copy to Clipboard** or press `Ctrl+C` / `Enter`. The PNG image is written directly to your system clipboard, and the tab closes automatically after confirmation.
-- **Save as PNG / JPEG / WebP / PDF**: Click **Save** or press `Ctrl+S`, pick a format from the selector, and adjust the quality slider for lossy formats. JPEG and PDF exports are flattened onto white so transparent regions never turn black. PDF exports produce a single page that exactly fits the annotated image, ready to attach to emails, tickets, or reports. Files download directly to your Downloads folder with a timestamped name.
+- **Save as PNG / JPEG / WebP / PDF**: Click **Save** or press `Ctrl+S`, pick a format from the selector, and adjust the quality slider for lossy formats. JPEG and PDF exports are flattened onto white so transparent regions never turn black. PDF exports produce a single page that exactly fits the annotated image, ready to attach to emails, tickets, or reports. Files download directly to your Downloads folder using a filename template such as `{domain}_{date}_{time}` (see [Filename Templates](#filename-templates)).
 - **100% Local & Privacy-Friendly**: Runs entirely in your browser without external servers, telemetry, or tracking.
 
 ---
@@ -77,6 +77,25 @@ This extension can be installed on any Chromium-based browser (Google Chrome, Mi
 - Press `Alt + Shift + W` anytime for **Include DevTools / Window** capture.
 - Press `Alt + Shift + R` anytime for **Select Area** capture.
 - Press `Alt + Shift + F` anytime for **Full Page** capture.
+
+---
+
+## Filename Templates
+
+Click the **filename template** button (file icon) next to the format selector in the editor header to control how saved files are named. The template is stored with the extension and reused for every save, and the panel shows a live preview of the generated filename.
+
+| Token | Becomes |
+| :--- | :--- |
+| `{domain}` | Source site host, e.g. `github.com` (empty for local or special pages) |
+| `{title}` | Source tab title |
+| `{date}` | Local date, e.g. `2026-10-29` |
+| `{time}` | Local time, e.g. `14-05-09` |
+| `{datetime}` | `2026-10-29_14-05-09` |
+| `{timestamp}` | Unix time in milliseconds |
+| `{width}` / `{height}` | Exported image size in pixels |
+| `{ext}` / `{format}` | Selected format extension (`png`, `jpg`, `webp`, `pdf`) |
+
+The default template is `screen-snap_{date}_{time}`, and the format's extension is appended automatically. Unknown tokens are kept as typed so typos are easy to spot in the preview. Characters that browsers or file systems reject (`\ / : * ? " < > |`) are replaced with `-`, runs of separators are squashed, and names are capped at 120 characters.
 
 ---
 
