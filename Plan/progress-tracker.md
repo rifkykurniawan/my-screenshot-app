@@ -33,7 +33,7 @@ Mark `[x]` when a day is done.
 - [ ] Day 20 (Sun Nov 1): Export review (M3)
 
 ## Week 4: Advanced editing (Nov 2-8)
-- [ ] Day 21 (Mon Nov 2): Zoom and pan
+- [x] Day 21 (Mon Nov 2): Zoom and pan
 - [ ] Day 22 (Tue Nov 3): Beautify mode
 - [ ] Day 23 (Wed Nov 4): Frames
 - [ ] Day 24 (Thu Nov 5): Stickers and watermark

@@ -4,9 +4,9 @@ Goal: make screenshots look polished and easier to edit.
 Main files: `editor/editor.js`, `editor/editor.html`, `editor/editor.css`.
 
 ## Day 21 (Mon Nov 2): Zoom and pan
-- [ ] Zoom with `Ctrl+wheel` and fit/100% buttons
-- [ ] Pan with space+drag
-- [ ] Keep drawing coordinates correct while zoomed
+- [x] Zoom with `Ctrl+wheel` and fit/100% buttons
+- [x] Pan with space+drag
+- [x] Keep drawing coordinates correct while zoomed
 - **Done when:** annotations land in the right place at any zoom.
 
 ## Day 22 (Tue Nov 3): Beautify mode
