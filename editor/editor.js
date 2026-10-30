@@ -47,6 +47,11 @@
   const templateTokens = document.getElementById('template-tokens');
   const templatePreview = document.getElementById('template-preview');
   const btnTemplateReset = document.getElementById('btn-template-reset');
+  const btnZoomOut = document.getElementById('btn-zoom-out');
+  const btnZoomIn = document.getElementById('btn-zoom-in');
+  const zoomLevelLabel = document.getElementById('zoom-level');
+  const btnZoomFit = document.getElementById('btn-zoom-fit');
+  const btnZoomActual = document.getElementById('btn-zoom-actual');
 
   // Drawing & State
   let currentTool = 'rectangle'; // 'select' | 'crop' | 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'step' | 'highlighter' | 'blur' | 'text'
@@ -98,6 +103,17 @@
   let hoveredEraserIndex = -1;
   let isErasing = false;
   let erasedInCurrentDrag = false;
+
+  // Zoom & Pan State
+  const ZOOM_MIN = 0.1;
+  const ZOOM_MAX = 8;
+  const ZOOM_STEPS = [0.1, 0.25, 0.33, 0.5, 0.67, 0.75, 1, 1.25, 1.5, 2, 3, 4, 6, 8];
+  let zoomLevel = 1;
+  let zoomMode = 'fit'; // 'fit' | 'manual'
+  let needsInitialFit = true;
+  let isSpaceDown = false;
+  let isPanning = false;
+  let panStart = null;
 
   // Deep clone helpers for shapes with nested points arrays
   function cloneShape(s) {
@@ -188,6 +204,7 @@
       if (undoStack.length === 1 && !undoStack[0].baseImage) {
         undoStack[0].baseImage = baseImage;
       }
+      needsInitialFit = true;
       render();
     };
     img.onerror = () => {
@@ -237,6 +254,7 @@
     if (undoStack.length === 1 && !undoStack[0].baseImage) {
       undoStack[0].baseImage = baseImage;
     }
+    needsInitialFit = true;
     render();
   }
 
@@ -294,8 +312,17 @@
       drawCropUI(cropBox, bannerHeight);
     }
 
+    // Keep the on-screen size in sync with the current zoom level
+    syncCanvasDisplaySize();
+
     // Update Dimensions Badge
     dimensionsBadge.textContent = `${canvas.width} × ${canvas.height} px`;
+
+    // First paint: fit the screenshot inside the workspace
+    if (needsInitialFit) {
+      needsInitialFit = false;
+      zoomToFit();
+    }
 
     // Update Floating Crop Bar if active
     updateCropFloatingBar();
@@ -881,6 +908,156 @@
       x: (e.clientX - rect.left) * scaleX,
       y: (e.clientY - rect.top) * scaleY
     };
+  }
+
+  // Zoom & Pan
+  // Zoom is applied through the canvas CSS size, so every screen-to-canvas
+  // conversion (getBoundingClientRect based) stays correct at any level.
+  function clampZoom(value) {
+    return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, value));
+  }
+
+  function syncCanvasDisplaySize() {
+    if (!canvas.width || !canvas.height) return;
+    const displayWidth = Math.max(1, Math.round(canvas.width * zoomLevel));
+    const displayHeight = Math.max(1, Math.round(canvas.height * zoomLevel));
+    const widthStr = `${displayWidth}px`;
+    const heightStr = `${displayHeight}px`;
+    if (canvas.style.width !== widthStr) canvas.style.width = widthStr;
+    if (canvas.style.height !== heightStr) canvas.style.height = heightStr;
+  }
+
+  function updateZoomUI() {
+    if (zoomLevelLabel) {
+      zoomLevelLabel.textContent = `${Math.round(zoomLevel * 100)}%`;
+    }
+    if (btnZoomOut) {
+      btnZoomOut.disabled = zoomLevel <= ZOOM_MIN + 0.0001;
+    }
+    if (btnZoomIn) {
+      btnZoomIn.disabled = zoomLevel >= ZOOM_MAX - 0.0001;
+    }
+    if (btnZoomFit) {
+      btnZoomFit.classList.toggle('active', zoomMode === 'fit');
+    }
+  }
+
+  // Changes zoom while keeping the given client point anchored in place
+  function setZoom(nextZoom, anchorClientX, anchorClientY) {
+    if (!baseImage) return;
+    const clamped = clampZoom(nextZoom);
+    if (Math.abs(clamped - zoomLevel) < 0.0001) {
+      updateZoomUI();
+      return;
+    }
+
+    commitActiveText();
+
+    const rect = canvas.getBoundingClientRect();
+    const viewRect = workspace.getBoundingClientRect();
+    const anchorX = typeof anchorClientX === 'number' ? anchorClientX : viewRect.left + viewRect.width / 2;
+    const anchorY = typeof anchorClientY === 'number' ? anchorClientY : viewRect.top + viewRect.height / 2;
+    const ratioX = rect.width > 0 ? (anchorX - rect.left) / rect.width : 0.5;
+    const ratioY = rect.height > 0 ? (anchorY - rect.top) / rect.height : 0.5;
+
+    zoomLevel = clamped;
+    zoomMode = 'manual';
+    syncCanvasDisplaySize();
+
+    const nextRect = canvas.getBoundingClientRect();
+    workspace.scrollLeft += (nextRect.left + ratioX * nextRect.width) - anchorX;
+    workspace.scrollTop += (nextRect.top + ratioY * nextRect.height) - anchorY;
+
+    updateZoomUI();
+    updateCropFloatingBar();
+  }
+
+  function zoomByStep(direction) {
+    if (!baseImage) return;
+    let target = zoomLevel;
+    if (direction > 0) {
+      const nextStep = ZOOM_STEPS.find(step => step > zoomLevel + 0.0001);
+      target = nextStep !== undefined ? nextStep : ZOOM_MAX;
+    } else {
+      for (let i = ZOOM_STEPS.length - 1; i >= 0; i -= 1) {
+        if (ZOOM_STEPS[i] < zoomLevel - 0.0001) {
+          target = ZOOM_STEPS[i];
+          break;
+        }
+      }
+    }
+    setZoom(target);
+  }
+
+  function zoomToFit() {
+    if (!baseImage || !canvas.width || !canvas.height) return;
+    const availableWidth = workspace.clientWidth - 48;
+    const availableHeight = workspace.clientHeight - 48;
+    if (availableWidth <= 0 || availableHeight <= 0) return;
+
+    commitActiveText();
+
+    const fitScale = Math.min(availableWidth / canvas.width, availableHeight / canvas.height, 1);
+    zoomLevel = clampZoom(fitScale);
+    zoomMode = 'fit';
+    syncCanvasDisplaySize();
+    workspace.scrollLeft = 0;
+    workspace.scrollTop = 0;
+    updateZoomUI();
+    updateCropFloatingBar();
+  }
+
+  function zoomToActualSize() {
+    setZoom(1);
+  }
+
+  function onWorkspaceWheel(e) {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    if (!baseImage) return;
+    const delta = e.deltaMode === 1 ? e.deltaY * 16 : (e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY);
+    const factor = Math.exp(-delta * 0.0015);
+    setZoom(zoomLevel * factor, e.clientX, e.clientY);
+  }
+
+  function onWorkspacePanStart(e) {
+    if (!isSpaceDown || e.button !== 0) return;
+    if (e.target && e.target.closest && e.target.closest('.zoom-controls')) return;
+    e.preventDefault();
+    startPan(e);
+  }
+
+  function startPan(e) {
+    isPanning = true;
+    panStart = {
+      x: e.clientX,
+      y: e.clientY,
+      left: workspace.scrollLeft,
+      top: workspace.scrollTop
+    };
+    workspace.classList.add('panning');
+  }
+
+  function updatePan(e) {
+    if (!panStart) return;
+    workspace.scrollLeft = panStart.left - (e.clientX - panStart.x);
+    workspace.scrollTop = panStart.top - (e.clientY - panStart.y);
+  }
+
+  function endPan() {
+    isPanning = false;
+    panStart = null;
+    workspace.classList.remove('panning');
+    canvas.style.cursor = isSpaceDown ? 'grab' : '';
+  }
+
+  function onKeyUp(e) {
+    if (e.code === 'Space') {
+      isSpaceDown = false;
+      if (!isPanning) {
+        canvas.style.cursor = '';
+      }
+    }
   }
 
   // Hit-Testing and Geometry Helpers
@@ -1657,16 +1834,26 @@
     const scaleY = rect.height / canvas.height;
     const bannerHeight = getBannerHeight();
 
+    const containerRect = canvasContainer.getBoundingClientRect();
+    const viewRect = workspace.getBoundingClientRect();
+    const barWidth = cropFloatingBar.offsetWidth;
+    const barHeight = cropFloatingBar.offsetHeight;
+    const halfBar = barWidth / 2;
+    const minX = viewRect.left - containerRect.left + halfBar + 8;
+    const maxX = viewRect.right - containerRect.left - halfBar - 8;
+    const minY = viewRect.top - containerRect.top + 8;
+    const maxY = viewRect.bottom - containerRect.top - barHeight - 8;
+
     const screenX = (b.x + b.w / 2) * scaleX;
     const screenYBottom = (b.y + b.h + bannerHeight) * scaleY;
 
     let top = screenYBottom + 12;
-    if (top + 45 > rect.height) {
-      top = Math.max(10, screenYBottom - 48);
+    if (top > maxY) {
+      top = screenYBottom - barHeight - 12;
     }
 
-    cropFloatingBar.style.left = `${Math.max(60, Math.min(rect.width - 60, screenX))}px`;
-    cropFloatingBar.style.top = `${top}px`;
+    cropFloatingBar.style.left = `${Math.max(minX, Math.min(maxX, screenX))}px`;
+    cropFloatingBar.style.top = `${Math.max(minY, Math.min(maxY, top))}px`;
   }
 
   function applyCrop() {
@@ -1707,6 +1894,7 @@
     // 4. Save history snapshot and re-render
     commitHistory();
     render();
+    if (zoomMode === 'fit') zoomToFit();
     showToast('Cropped Screenshot', `${cropW} × ${cropH} px (Ctrl+Z to undo)`);
   }
 
@@ -1963,8 +2151,27 @@
     if (btnCropCancel) btnCropCancel.addEventListener('click', cancelCrop);
     if (btnCropApplyFloat) btnCropApplyFloat.addEventListener('click', applyCrop);
     if (btnCropCancelFloat) btnCropCancelFloat.addEventListener('click', cancelCrop);
-    window.addEventListener('resize', updateCropFloatingBar);
+    window.addEventListener('resize', () => {
+      updateCropFloatingBar();
+      if (zoomMode === 'fit') zoomToFit();
+    });
     if (workspace) workspace.addEventListener('scroll', updateCropFloatingBar);
+
+    // Zoom controls & pan
+    if (btnZoomIn) btnZoomIn.addEventListener('click', () => zoomByStep(1));
+    if (btnZoomOut) btnZoomOut.addEventListener('click', () => zoomByStep(-1));
+    if (btnZoomFit) btnZoomFit.addEventListener('click', zoomToFit);
+    if (btnZoomActual) btnZoomActual.addEventListener('click', zoomToActualSize);
+    if (workspace) {
+      workspace.addEventListener('wheel', onWorkspaceWheel, { passive: false });
+      workspace.addEventListener('mousedown', onWorkspacePanStart);
+    }
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', () => {
+      isSpaceDown = false;
+      if (isPanning) endPan();
+      canvas.style.cursor = '';
+    });
 
     // Keyboard Shortcuts
     window.addEventListener('keydown', onKeyDown);
@@ -2173,6 +2380,9 @@
   function onMouseDown(e) {
     if (e.button !== 0) return; // Left mouse click only
 
+    // Space is held: leave the panning to the workspace handler
+    if (isSpaceDown) return;
+
     // If clicking on active text editor itself, allow native typing & selection
     if (e.target && e.target.classList.contains('canvas-text-editor')) {
       return;
@@ -2297,6 +2507,11 @@
   }
 
   function onMouseMove(e) {
+    if (isPanning) {
+      updatePan(e);
+      return;
+    }
+
     const coords = getCanvasCoordinates(e);
     const bannerHeight = getBannerHeight();
     const currentX = coords.x;
@@ -2518,6 +2733,11 @@
   }
 
   function onMouseUp(e) {
+    if (isPanning) {
+      endPan();
+      return;
+    }
+
     if (currentTool === 'crop' && cropDragMode) {
       if (cropDragMode === 'draw') {
         cropBox = getNormalizedBox(cropBox);
@@ -2728,6 +2948,41 @@
     // If typing inside an input or textarea, do not intercept keystrokes
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
       return;
+    }
+
+    // Zoom shortcuts: Ctrl+= / Ctrl+- / Ctrl+0 (fit) / Ctrl+1 (100%)
+    if (isCtrlOrMeta && !e.altKey && (e.key === '=' || e.key === '+')) {
+      e.preventDefault();
+      zoomByStep(1);
+      return;
+    }
+    if (isCtrlOrMeta && !e.altKey && (e.key === '-' || e.key === '_')) {
+      e.preventDefault();
+      zoomByStep(-1);
+      return;
+    }
+    if (isCtrlOrMeta && !e.altKey && e.key === '0') {
+      e.preventDefault();
+      zoomToFit();
+      return;
+    }
+    if (isCtrlOrMeta && !e.altKey && e.key === '1') {
+      e.preventDefault();
+      zoomToActualSize();
+      return;
+    }
+
+    // Hold Space to pan the canvas with a drag
+    if (e.code === 'Space' && !isCtrlOrMeta && !e.altKey && !e.shiftKey) {
+      const onControl = e.target && e.target.closest && e.target.closest('button, a, select, [contenteditable="true"]');
+      if (!onControl) {
+        e.preventDefault();
+        if (!isSpaceDown) {
+          isSpaceDown = true;
+          if (!isPanning) canvas.style.cursor = 'grab';
+        }
+        return;
+      }
     }
 
     // Crop shortcuts: Enter to Apply, Escape to Cancel

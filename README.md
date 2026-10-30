@@ -30,6 +30,7 @@ A lightweight, productivity-focused Chrome extension for capturing and annotatin
   - **Text Tool (`T`)**: Click anywhere on the screenshot to type custom text annotations with auto-resizing, live colors, and clear drop-shadow legibility.
 - **Curated Color Palette**: Pre-configured high-contrast colors (Crimson Red, Orange, Yellow, Green, Cyan, Blue, White) plus a native custom color picker.
 - **Adjustable Stroke / Font Size**: Choose from 4 line weights & corresponding font sizes (Thin: 2px / 16px, Medium: 4px / 22px, Thick: 7px / 32px, Bold: 11px / 44px).
+- **Zoom & Pan**: Zoom the canvas with `Ctrl` + mouse wheel, the floating zoom controls, or `Ctrl + =` / `Ctrl + -`. Press **Fit** (`Ctrl + 0`) to fit the whole screenshot in the window or **1:1** (`Ctrl + 1`) for actual pixels, then hold `Space` and drag to pan. Drawings, text, crops, and selection handles are mapped correctly at every zoom level, so annotations always land exactly where you click.
 - **History & Undo/Redo**: Full undo (`Ctrl+Z`) and redo (`Ctrl+Y` / `Ctrl+Shift+Z`) support with state preservation when toggling the URL header.
 - **One-Click Copy & Auto-Close**: Click **Copy to Clipboard** or press `Ctrl+C` / `Enter`. The PNG image is written directly to your system clipboard, and the tab closes automatically after confirmation.
 - **Save as PNG / JPEG / WebP / PDF**: Click **Save** or press `Ctrl+S`, pick a format from the selector, and adjust the quality slider for lossy formats. JPEG and PDF exports are flattened onto white so transparent regions never turn black. PDF exports produce a single page that exactly fits the annotated image, ready to attach to emails, tickets, or reports. Files download directly to your Downloads folder using a filename template such as `{domain}_{date}_{time}` (see [Filename Templates](#filename-templates)).
@@ -123,6 +124,11 @@ The default template is `screen-snap_{date}_{time}`, and the format's extension 
 | `Shift + Enter` *(while typing text)* | Insert newline in text annotation |
 | `Ctrl + C` or `Enter` *(Cmd+C on Mac)* | Copy screenshot to clipboard & auto-close tab |
 | `Ctrl + S` *(Cmd+S on Mac)* | Save screenshot in the selected format (PNG / JPEG / WebP / PDF) |
+| `Ctrl + Wheel` | Zoom the canvas in / out around the mouse pointer |
+| `Ctrl + =` / `Ctrl + -` *(Cmd on Mac)* | Zoom the canvas in / out |
+| `Ctrl + 0` *(Cmd+0 on Mac)* | Fit the screenshot to the window |
+| `Ctrl + 1` *(Cmd+1 on Mac)* | Reset zoom to 100% (actual size) |
+| `Space + Drag` | Pan the zoomed canvas |
 | `Ctrl + Z` *(Cmd+Z on Mac)* | Undo last annotation |
 | `Ctrl + Y` or `Ctrl + Shift + Z` | Redo annotation |
 | `Escape` | Cancel current drawing drag, deselect annotation, or dismiss active text |
