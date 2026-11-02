@@ -10,8 +10,8 @@ Main files: `editor/editor.js`, `editor/editor.html`, `editor/editor.css`.
 - **Done when:** annotations land in the right place at any zoom.
 
 ## Day 22 (Tue Nov 3): Beautify mode
-- [ ] Add background (solid/gradient), padding, rounded corners, shadow
-- [ ] Add preset styles
+- [x] Add background (solid/gradient), padding, rounded corners, shadow
+- [x] Add preset styles
 - **Done when:** the copied image includes the styling.
 
 ## Day 23 (Wed Nov 4): Device / browser frames

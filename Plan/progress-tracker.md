@@ -34,7 +34,7 @@ Mark `[x]` when a day is done.
 
 ## Week 4: Advanced editing (Nov 2-8)
 - [x] Day 21 (Mon Nov 2): Zoom and pan
-- [ ] Day 22 (Tue Nov 3): Beautify mode
+- [x] Day 22 (Tue Nov 3): Beautify mode
 - [ ] Day 23 (Wed Nov 4): Frames
 - [ ] Day 24 (Thu Nov 5): Stickers and watermark
 - [ ] Day 25 (Fri Nov 6): Text styles

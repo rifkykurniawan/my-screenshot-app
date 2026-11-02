@@ -52,6 +52,20 @@
   const zoomLevelLabel = document.getElementById('zoom-level');
   const btnZoomFit = document.getElementById('btn-zoom-fit');
   const btnZoomActual = document.getElementById('btn-zoom-actual');
+  const btnBeautify = document.getElementById('btn-beautify');
+  const beautifyPanel = document.getElementById('beautify-panel');
+  const beautifyEnable = document.getElementById('beautify-enabled');
+  const beautifyPresets = document.getElementById('beautify-presets');
+  const beautifyBody = document.getElementById('beautify-body');
+  const beautifyBgMode = document.getElementById('beautify-bg-mode');
+  const beautifyColor = document.getElementById('beautify-color');
+  const beautifyColor2 = document.getElementById('beautify-color2');
+  const beautifyColor2Label = document.getElementById('beautify-color2-label');
+  const beautifyPadding = document.getElementById('beautify-padding');
+  const beautifyPaddingVal = document.getElementById('beautify-padding-val');
+  const beautifyRadius = document.getElementById('beautify-radius');
+  const beautifyRadiusVal = document.getElementById('beautify-radius-val');
+  const beautifyShadow = document.getElementById('beautify-shadow');
 
   // Drawing & State
   let currentTool = 'rectangle'; // 'select' | 'crop' | 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'step' | 'highlighter' | 'blur' | 'text'
@@ -84,6 +98,30 @@
   const MAX_FILENAME_LENGTH = 120;
   let filenameTemplate = DEFAULT_FILENAME_TEMPLATE;
   let templateSaveTimer = null;
+
+  // Beautify State
+  const BEAUTIFY_STORAGE_KEY = 'beautifySettings';
+  const BEAUTIFY_DEFAULTS = {
+    enabled: false,
+    preset: 'none',
+    bgMode: 'gradient',
+    color: '#6366f1',
+    color2: '#ec4899',
+    angle: 135,
+    padding: 64,
+    radius: 18,
+    shadow: true,
+  };
+  const BEAUTIFY_PRESETS = {
+    sunset: { bgMode: 'gradient', color: '#f97316', color2: '#db2777', angle: 135, padding: 64, radius: 18, shadow: true },
+    ocean: { bgMode: 'gradient', color: '#0ea5e9', color2: '#4f46e5', angle: 135, padding: 64, radius: 18, shadow: true },
+    grape: { bgMode: 'gradient', color: '#8b5cf6', color2: '#ec4899', angle: 135, padding: 64, radius: 18, shadow: true },
+    mint: { bgMode: 'gradient', color: '#34d399', color2: '#06b6d4', angle: 135, padding: 64, radius: 18, shadow: true },
+    midnight: { bgMode: 'solid', color: '#0f172a', color2: '#0f172a', angle: 135, padding: 56, radius: 14, shadow: true },
+    snow: { bgMode: 'solid', color: '#f1f5f9', color2: '#f1f5f9', angle: 135, padding: 56, radius: 14, shadow: true },
+  };
+  let beautify = { ...BEAUTIFY_DEFAULTS };
+  let beautifySaveTimer = null;
 
   // Crop State
   let cropBox = null; // { x, y, w, h } in screenshot baseImage coordinates
@@ -150,8 +188,9 @@
     setupEventListeners();
     setTool(currentTool);
     updateHistoryButtons();
+    await Promise.all([loadFilenameTemplate(), loadBeautifySettings()]);
     await loadScreenshot();
-    await loadFilenameTemplate();
+    updateTemplatePreview();
   }
 
   // Load screenshot and metadata from chrome.storage.local
@@ -925,6 +964,7 @@
     const heightStr = `${displayHeight}px`;
     if (canvas.style.width !== widthStr) canvas.style.width = widthStr;
     if (canvas.style.height !== heightStr) canvas.style.height = heightStr;
+    applyBeautifyPreview();
   }
 
   function updateZoomUI() {
@@ -997,7 +1037,11 @@
 
     commitActiveText();
 
-    const fitScale = Math.min(availableWidth / canvas.width, availableHeight / canvas.height, 1);
+    // Beautify padding is stored in image pixels, so include it in the fitted size
+    const beautifyPad = getBeautifyPaddingPx();
+    const totalWidth = canvas.width + beautifyPad * 2;
+    const totalHeight = canvas.height + beautifyPad * 2;
+    const fitScale = Math.min(availableWidth / totalWidth, availableHeight / totalHeight, 1);
     zoomLevel = clampZoom(fitScale);
     zoomMode = 'fit';
     syncCanvasDisplaySize();
@@ -1844,8 +1888,11 @@
     const minY = viewRect.top - containerRect.top + 8;
     const maxY = viewRect.bottom - containerRect.top - barHeight - 8;
 
-    const screenX = (b.x + b.w / 2) * scaleX;
-    const screenYBottom = (b.y + b.h + bannerHeight) * scaleY;
+    // The canvas can be inset by the beautify preview padding
+    const canvasOffsetX = rect.left - containerRect.left;
+    const canvasOffsetY = rect.top - containerRect.top;
+    const screenX = canvasOffsetX + (b.x + b.w / 2) * scaleX;
+    const screenYBottom = canvasOffsetY + (b.y + b.h + bannerHeight) * scaleY;
 
     let top = screenYBottom + 12;
     if (top > maxY) {
@@ -2139,6 +2186,77 @@
         saveFilenameTemplate(filenameTemplate);
       });
     }
+
+    // Beautify popover
+    if (btnBeautify && beautifyPanel) {
+      btnBeautify.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (beautifyPanel.classList.contains('hidden')) {
+          closeTemplatePanel();
+          openBeautifyPanel();
+        } else {
+          closeBeautifyPanel();
+        }
+      });
+    }
+    if (beautifyEnable) {
+      beautifyEnable.addEventListener('change', () => {
+        if (beautifyEnable.checked) {
+          if (beautify.preset === 'none') {
+            applyBeautifyPreset('sunset');
+            return;
+          }
+          beautify = { ...beautify, enabled: true };
+        } else {
+          beautify = { ...beautify, enabled: false, preset: 'none' };
+        }
+        updateBeautifyControls();
+        applyBeautifyPreview();
+        if (zoomMode === 'fit') zoomToFit();
+        scheduleBeautifySave();
+      });
+    }
+    if (beautifyPresets) {
+      beautifyPresets.addEventListener('click', (e) => {
+        const btn = e.target.closest('.beautify-preset');
+        if (btn) applyBeautifyPreset(btn.dataset.preset || 'none');
+      });
+    }
+    if (beautifyBgMode) {
+      beautifyBgMode.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-mode]');
+        if (btn) setBeautifyOption({ bgMode: btn.dataset.mode });
+      });
+    }
+    if (beautifyColor) {
+      beautifyColor.addEventListener('input', (e) => setBeautifyOption({ color: e.target.value }));
+    }
+    if (beautifyColor2) {
+      beautifyColor2.addEventListener('input', (e) => setBeautifyOption({ color2: e.target.value }));
+    }
+    if (beautifyPadding) {
+      beautifyPadding.addEventListener('input', (e) => {
+        setBeautifyOption({ padding: parseInt(e.target.value, 10) || 0 });
+      });
+      beautifyPadding.addEventListener('change', () => {
+        if (zoomMode === 'fit') zoomToFit();
+      });
+    }
+    if (beautifyRadius) {
+      beautifyRadius.addEventListener('input', (e) => {
+        setBeautifyOption({ radius: parseInt(e.target.value, 10) || 0 });
+      });
+    }
+    if (beautifyShadow) {
+      beautifyShadow.addEventListener('change', () => setBeautifyOption({ shadow: beautifyShadow.checked }));
+    }
+    document.addEventListener('mousedown', (e) => {
+      if (!beautifyPanel || beautifyPanel.classList.contains('hidden')) return;
+      if (beautifyPanel.contains(e.target)) return;
+      if (btnBeautify && btnBeautify.contains(e.target)) return;
+      closeBeautifyPanel();
+    });
+
     document.addEventListener('mousedown', (e) => {
       if (!templatePanel || templatePanel.classList.contains('hidden')) return;
       if (templatePanel.contains(e.target)) return;
@@ -2298,11 +2416,13 @@
     commitActiveText(); // Commit any existing open text input first
 
     const rect = canvas.getBoundingClientRect();
+    const containerRect = canvasContainer.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
 
-    const containerX = clientX - rect.left;
-    const containerY = clientY - rect.top;
+    // Position relative to the container so beautify preview padding is respected
+    const containerX = clientX - containerRect.left;
+    const containerY = clientY - containerRect.top;
 
     const baseFontSize = initialFontSize ? Math.round(initialFontSize / scaleX) : getBaseFontSize(currentStroke);
     const textarea = document.createElement('textarea');
@@ -2945,6 +3065,13 @@
       return;
     }
 
+    // Escape closes the beautify popover
+    if (e.key === 'Escape' && beautifyPanel && !beautifyPanel.classList.contains('hidden')) {
+      e.preventDefault();
+      closeBeautifyPanel();
+      return;
+    }
+
     // If typing inside an input or textarea, do not intercept keystrokes
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
       return;
@@ -3125,13 +3252,8 @@
     `;
 
     try {
-      // Convert canvas to PNG Blob
-      const blob = await new Promise((resolve, reject) => {
-        canvas.toBlob((b) => {
-          if (b) resolve(b);
-          else reject(new Error('Failed to create canvas blob.'));
-        }, 'image/png');
-      });
+      // Convert the beautified output to a PNG Blob
+      const blob = await canvasToBlob(createExportCanvas('image/png'), 'image/png');
 
       // Write PNG Blob to Clipboard
       const item = new ClipboardItem({ 'image/png': blob });
@@ -3276,6 +3398,218 @@
     updateTemplatePreview();
   }
 
+  // Beautify: settings, live preview and export compositing
+  function clampNumber(value, min, max, fallback) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return fallback;
+    return Math.min(max, Math.max(min, num));
+  }
+
+  function normalizeBeautifySettings(raw) {
+    const hasStored = raw && typeof raw === 'object';
+    const source = hasStored ? raw : {};
+    const validPreset = typeof source.preset === 'string' && (source.preset === 'custom' || source.preset === 'none' || BEAUTIFY_PRESETS[source.preset]);
+    const preset = validPreset ? source.preset : (hasStored ? 'custom' : BEAUTIFY_DEFAULTS.preset);
+    return {
+      enabled: typeof source.enabled === 'boolean' ? source.enabled : BEAUTIFY_DEFAULTS.enabled,
+      preset,
+      bgMode: source.bgMode === 'solid' ? 'solid' : 'gradient',
+      color: typeof source.color === 'string' ? source.color : BEAUTIFY_DEFAULTS.color,
+      color2: typeof source.color2 === 'string' ? source.color2 : BEAUTIFY_DEFAULTS.color2,
+      angle: clampNumber(source.angle, 0, 360, BEAUTIFY_DEFAULTS.angle),
+      padding: Math.round(clampNumber(source.padding, 0, 160, BEAUTIFY_DEFAULTS.padding)),
+      radius: Math.round(clampNumber(source.radius, 0, 64, BEAUTIFY_DEFAULTS.radius)),
+      shadow: typeof source.shadow === 'boolean' ? source.shadow : BEAUTIFY_DEFAULTS.shadow,
+    };
+  }
+
+  function getBeautifyPaddingPx() {
+    return beautify.enabled ? Math.round(beautify.padding) : 0;
+  }
+
+  function getBeautifyBackgroundStyle() {
+    if (beautify.bgMode === 'solid') return beautify.color;
+    return `linear-gradient(${beautify.angle}deg, ${beautify.color}, ${beautify.color2})`;
+  }
+
+  function applyBeautifyPreview() {
+    if (!canvasContainer) return;
+    canvasContainer.classList.toggle('beautify-preview', beautify.enabled);
+    if (!beautify.enabled) {
+      canvasContainer.style.removeProperty('--beauty-padding');
+      canvasContainer.style.removeProperty('--beauty-bg');
+      canvasContainer.style.removeProperty('--beauty-radius');
+      canvasContainer.style.removeProperty('--beauty-shadow');
+      return;
+    }
+    const scale = zoomLevel;
+    canvasContainer.style.setProperty('--beauty-padding', `${Math.max(0, Math.round(beautify.padding * scale))}px`);
+    canvasContainer.style.setProperty('--beauty-bg', getBeautifyBackgroundStyle());
+    canvasContainer.style.setProperty('--beauty-radius', `${Math.max(0, Math.round(beautify.radius * scale))}px`);
+    canvasContainer.style.setProperty(
+      '--beauty-shadow',
+      beautify.shadow
+        ? `0 ${Math.round(18 * scale)}px ${Math.round(40 * scale)}px rgba(0, 0, 0, 0.45)`
+        : 'none'
+    );
+  }
+
+  function updateBeautifyControls() {
+    if (beautifyEnable) beautifyEnable.checked = beautify.enabled;
+    if (beautifyBody) beautifyBody.classList.toggle('disabled', !beautify.enabled);
+    if (btnBeautify) {
+      btnBeautify.classList.toggle('active', beautify.enabled);
+      btnBeautify.setAttribute('aria-pressed', beautify.enabled ? 'true' : 'false');
+    }
+
+    if (beautifyPresets) {
+      beautifyPresets.querySelectorAll('.beautify-preset').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.preset === beautify.preset);
+      });
+    }
+
+    if (beautifyBgMode) {
+      beautifyBgMode.querySelectorAll('button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === beautify.bgMode);
+      });
+    }
+
+    if (beautifyColor) beautifyColor.value = beautify.color;
+    if (beautifyColor2) beautifyColor2.value = beautify.color2;
+    if (beautifyColor2Label) beautifyColor2Label.classList.toggle('hidden', beautify.bgMode === 'solid');
+    if (beautifyPadding) beautifyPadding.value = String(beautify.padding);
+    if (beautifyPaddingVal) beautifyPaddingVal.textContent = `${beautify.padding}px`;
+    if (beautifyRadius) beautifyRadius.value = String(beautify.radius);
+    if (beautifyRadiusVal) beautifyRadiusVal.textContent = `${beautify.radius}px`;
+    if (beautifyShadow) beautifyShadow.checked = beautify.shadow;
+  }
+
+  function saveBeautifySettings() {
+    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) return;
+    try {
+      const result = chrome.storage.local.set({ [BEAUTIFY_STORAGE_KEY]: beautify });
+      if (result && typeof result.catch === 'function') result.catch(() => {});
+    } catch (err) {
+      console.error('Error saving beautify settings:', err);
+    }
+  }
+
+  function scheduleBeautifySave() {
+    if (beautifySaveTimer) clearTimeout(beautifySaveTimer);
+    beautifySaveTimer = setTimeout(() => {
+      beautifySaveTimer = null;
+      saveBeautifySettings();
+    }, 350);
+  }
+
+  async function loadBeautifySettings() {
+    let stored = null;
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      try {
+        const data = await chrome.storage.local.get([BEAUTIFY_STORAGE_KEY]);
+        stored = data ? data[BEAUTIFY_STORAGE_KEY] : null;
+      } catch (err) {
+        stored = null;
+      }
+    }
+    beautify = normalizeBeautifySettings(stored);
+    updateBeautifyControls();
+    applyBeautifyPreview();
+  }
+
+  function applyBeautifyPreset(presetId) {
+    if (presetId === 'none') {
+      beautify = { ...beautify, enabled: false, preset: 'none' };
+    } else if (BEAUTIFY_PRESETS[presetId]) {
+      beautify = { ...beautify, ...BEAUTIFY_PRESETS[presetId], enabled: true, preset: presetId };
+    } else {
+      return;
+    }
+    updateBeautifyControls();
+    applyBeautifyPreview();
+    if (zoomMode === 'fit') zoomToFit();
+    scheduleBeautifySave();
+  }
+
+  function setBeautifyOption(patch) {
+    beautify = { ...beautify, ...patch, preset: patch.preset || 'custom' };
+    updateBeautifyControls();
+    applyBeautifyPreview();
+    scheduleBeautifySave();
+  }
+
+  function openBeautifyPanel() {
+    if (!beautifyPanel) return;
+    updateBeautifyControls();
+    beautifyPanel.classList.remove('hidden');
+    if (btnBeautify) btnBeautify.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeBeautifyPanel() {
+    if (!beautifyPanel) return;
+    beautifyPanel.classList.add('hidden');
+    if (btnBeautify) btnBeautify.setAttribute('aria-expanded', 'false');
+  }
+
+  // Builds a CSS-compatible linear gradient direction from an angle in degrees
+  function createBeautifyGradient(targetCtx, width, height) {
+    const rad = (beautify.angle * Math.PI) / 180;
+    const dirX = Math.sin(rad);
+    const dirY = -Math.cos(rad);
+    const length = Math.abs(dirX) * width + Math.abs(dirY) * height;
+    const cx = width / 2;
+    const cy = height / 2;
+    const gradient = targetCtx.createLinearGradient(
+      cx - (dirX * length) / 2,
+      cy - (dirY * length) / 2,
+      cx + (dirX * length) / 2,
+      cy + (dirY * length) / 2
+    );
+    gradient.addColorStop(0, beautify.color);
+    gradient.addColorStop(1, beautify.color2);
+    return gradient;
+  }
+
+  // Composites the editor canvas onto a padded, styled output canvas.
+  // The editing canvas is never modified, so annotation coordinates stay valid.
+  function createBeautifiedCanvas() {
+    if (!beautify.enabled) return canvas;
+
+    const pad = getBeautifyPaddingPx();
+    const sourceWidth = canvas.width;
+    const sourceHeight = canvas.height;
+    const out = document.createElement('canvas');
+    out.width = sourceWidth + pad * 2;
+    out.height = sourceHeight + pad * 2;
+    const outCtx = out.getContext('2d');
+
+    outCtx.fillStyle = beautify.bgMode === 'solid'
+      ? beautify.color
+      : createBeautifyGradient(outCtx, out.width, out.height);
+    outCtx.fillRect(0, 0, out.width, out.height);
+
+    const radius = Math.min(Math.round(beautify.radius), Math.floor(Math.min(sourceWidth, sourceHeight) / 2));
+
+    if (beautify.shadow) {
+      outCtx.save();
+      const blur = Math.max(8, Math.round(Math.min(out.width, out.height) * 0.025));
+      outCtx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+      outCtx.shadowBlur = blur;
+      outCtx.shadowOffsetY = Math.round(blur * 0.4);
+      roundRect(outCtx, pad, pad, sourceWidth, sourceHeight, radius);
+      outCtx.fill();
+      outCtx.restore();
+    }
+
+    outCtx.save();
+    roundRect(outCtx, pad, pad, sourceWidth, sourceHeight, radius);
+    outCtx.clip();
+    outCtx.drawImage(canvas, pad, pad);
+    outCtx.restore();
+
+    return out;
+  }
+
   function openTemplatePanel() {
     if (!templatePanel) return;
     updateTemplatePreview();
@@ -3308,16 +3642,18 @@
   }
 
   function createExportCanvas(mime) {
+    const source = createBeautifiedCanvas();
+
     // JPEG has no alpha channel, so flatten transparency onto white first
-    if (mime !== 'image/jpeg') return canvas;
+    if (mime !== 'image/jpeg') return source;
 
     const exportCanvas = document.createElement('canvas');
-    exportCanvas.width = canvas.width;
-    exportCanvas.height = canvas.height;
+    exportCanvas.width = source.width;
+    exportCanvas.height = source.height;
     const exportCtx = exportCanvas.getContext('2d');
     exportCtx.fillStyle = '#ffffff';
     exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-    exportCtx.drawImage(canvas, 0, 0);
+    exportCtx.drawImage(source, 0, 0);
     return exportCanvas;
   }
 

@@ -284,6 +284,81 @@
           </div>
         </div>
       </div>
+      <div class="beautify-control">
+        <button type="button" id="btn-beautify" class="btn-icon beautify-toggle-btn" title="Beautify (background, padding, corners & shadow)" aria-haspopup="dialog" aria-expanded="false" aria-controls="beautify-panel">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m12 3 1.9 4.8L19 9.7l-4.3 3.4 1.6 5.2L12 15.6l-4.3 2.7 1.6-5.2L5 9.7l5.1-1.9L12 3z"></path>
+          </svg>
+        </button>
+        <div class="beautify-panel hidden" id="beautify-panel" role="dialog" aria-label="Beautify settings">
+          <div class="beautify-header">
+            <span class="beautify-title">Beautify</span>
+            <label class="beautify-switch" title="Enable beautify">
+              <input type="checkbox" id="beautify-enabled">
+              <span class="beautify-switch-slider"></span>
+            </label>
+          </div>
+          <div class="beautify-presets" id="beautify-presets" role="group" aria-label="Preset styles">
+            <button type="button" class="beautify-preset" data-preset="none" title="Turn beautify off">
+              <span class="beautify-preset-swatch beautify-swatch-none"></span>
+              <span>Off</span>
+            </button>
+            <button type="button" class="beautify-preset" data-preset="sunset" title="Sunset gradient">
+              <span class="beautify-preset-swatch" style="background: linear-gradient(135deg, #f97316, #db2777);"></span>
+              <span>Sunset</span>
+            </button>
+            <button type="button" class="beautify-preset" data-preset="ocean" title="Ocean gradient">
+              <span class="beautify-preset-swatch" style="background: linear-gradient(135deg, #0ea5e9, #4f46e5);"></span>
+              <span>Ocean</span>
+            </button>
+            <button type="button" class="beautify-preset" data-preset="grape" title="Grape gradient">
+              <span class="beautify-preset-swatch" style="background: linear-gradient(135deg, #8b5cf6, #ec4899);"></span>
+              <span>Grape</span>
+            </button>
+            <button type="button" class="beautify-preset" data-preset="mint" title="Mint gradient">
+              <span class="beautify-preset-swatch" style="background: linear-gradient(135deg, #34d399, #06b6d4);"></span>
+              <span>Mint</span>
+            </button>
+            <button type="button" class="beautify-preset" data-preset="midnight" title="Midnight solid">
+              <span class="beautify-preset-swatch" style="background: #0f172a;"></span>
+              <span>Midnight</span>
+            </button>
+            <button type="button" class="beautify-preset" data-preset="snow" title="Snow solid">
+              <span class="beautify-preset-swatch" style="background: #f1f5f9;"></span>
+              <span>Snow</span>
+            </button>
+          </div>
+          <div class="beautify-body" id="beautify-body">
+            <div class="beautify-label">Background</div>
+            <div class="beautify-segment" id="beautify-bg-mode" role="group" aria-label="Background type">
+              <button type="button" data-mode="solid">Solid</button>
+              <button type="button" data-mode="gradient">Gradient</button>
+            </div>
+            <div class="beautify-colors">
+              <label class="beautify-color" title="Background color">
+                <input type="color" id="beautify-color">
+                <span>Color</span>
+              </label>
+              <label class="beautify-color" id="beautify-color2-label" title="Gradient end color">
+                <input type="color" id="beautify-color2">
+                <span>Color 2</span>
+              </label>
+            </div>
+            <div class="beautify-row">
+              <label for="beautify-padding">Padding <span id="beautify-padding-val" class="beautify-value">64px</span></label>
+              <input type="range" id="beautify-padding" min="0" max="160" step="4" value="64">
+            </div>
+            <div class="beautify-row">
+              <label for="beautify-radius">Corners <span id="beautify-radius-val" class="beautify-value">18px</span></label>
+              <input type="range" id="beautify-radius" min="0" max="64" step="2" value="18">
+            </div>
+            <label class="beautify-check">
+              <input type="checkbox" id="beautify-shadow" checked>
+              <span>Drop shadow</span>
+            </label>
+          </div>
+        </div>
+      </div>
       <button id="btn-save" class="btn-secondary" title="Save screenshot (Ctrl+S)">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
