@@ -2,19 +2,18 @@
 
 Plan for building new features on top of Screen Snap (Chrome MV3 extension).
 
-- **Period:** Tue 2026-10-13 to Tue 2026-11-10 (29 calendar days)
 - **Schedule:** one rest/catch-up day per cycle. Work ran a day ahead from Day 10,
-  so after Sun Oct 18 the rest days are Sat Oct 24, Sat Oct 31 and Sat Nov 7.
+  so after Day 6 the rest days are Day 13, Day 19 and Day 26.
 - **Working days:** 24, of which Day 9 (paste / drop image) was skipped and is still unimplemented.
 
-> Timeline note: Day 12 (delayed capture) shipped on Fri Oct 23 instead of Sat Oct 24,
-> and Day 11 shipped Thu Oct 22, so every date from Day 10 onward moved one day earlier.
+> Timeline note: Day 12 (delayed capture) shipped early and Day 11 shipped ahead of it,
+> so the schedule from Day 10 onward moved one day earlier.
 > Day 17 (copy as Markdown / base64) was dropped, so later days were renumbered 17-29.
 
 ## Files
 | File | Days | Theme |
 | :--- | :--- | :--- |
-| [00-roadmap-overview.md](00-roadmap-overview.md) | 1-29 | Calendar and milestones |
+| [00-roadmap-overview.md](00-roadmap-overview.md) | 1-29 | Roadmap and milestones |
 | [week-1-annotation-tools.md](week-1-annotation-tools.md) | 1-7 | New drawing tools |
 | [week-2-capture-modes.md](week-2-capture-modes.md) | 8-14 | New ways to capture |
 | [week-3-export-sharing.md](week-3-export-sharing.md) | 15-20 | Save, export, share |
