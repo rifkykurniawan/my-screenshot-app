@@ -1,39 +1,39 @@
-# Week 1: Annotation Tools (Oct 13-19)
+# Week 1: Annotation Tools
 
 Goal: extend the editor beyond rectangle/arrow/text.
 Main files: `editor/editor.js`, `editor/editor.html`, `editor/editor.css`.
 
-## Day 1 (Tue Oct 13): Line and ellipse tools
+## Day 1: Line and ellipse tools
 - [x] Add Line tool (`L`) and Ellipse tool (`O`) to the toolbar
 - [x] Reuse the drag-to-draw flow and the color/stroke settings
 - [x] Support undo/redo for both
 - **Done when:** both shapes can be drawn, undone and copied.
 
-## Day 2 (Wed Oct 14): Highlighter
+## Day 2: Highlighter
 - [x] Add Highlighter tool (`H`) with a semi-transparent wide stroke
 - [x] Add an opacity setting
 - **Done when:** text under the highlight stays readable.
 
-## Day 3 (Thu Oct 15): Blur / pixelate redaction
+## Day 3: Blur / pixelate redaction
 - [x] Add Blur tool (`B`) drawn as a region
 - [x] Implement pixelate on the base image (sample blocks)
 - [x] Add a blur/pixelate toggle and an intensity slider
 - **Done when:** sensitive text is unreadable in the copied image.
 
-## Day 4 (Fri Oct 16): Numbered step markers
+## Day 4: Numbered step markers
 - [x] Add Step tool (`N`) that places circles numbered 1, 2, 3...
 - [x] Auto-increment, and renumber on undo
 - **Done when:** markers are legible at all stroke sizes.
 
-## Day 5 (Sat Oct 17): Select, move, resize, delete
+## Day 5: Select, move, resize, delete
 - [x] Store annotations as objects (type, geometry, style)
 - [x] Add Select tool (`V`) with hit testing
 - [x] Add move, resize handles and `Delete` key
 - **Done when:** any existing annotation can be edited after drawing.
 
-## Day 6 (Sun Oct 18): Sunday rest / catch-up
+## Day 6: Rest / catch-up
 
-## Day 7 (Mon Oct 19): Eraser, clear all, week review (Milestone M1)
+## Day 7: Eraser, clear all, week review (Milestone M1)
 - [x] Add Eraser (click removes an annotation)
 - [x] Add a "Clear all" button with undo support
 - [x] Update README shortcuts, fix week bugs

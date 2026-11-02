@@ -856,6 +856,284 @@ body {
   text-decoration: underline;
 }
 
+/* Beautify Panel */
+.beautify-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.beautify-toggle-btn.active {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.beautify-panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.8rem;
+  background: #131a2a;
+  border: 1px solid var(--border-hover);
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+  z-index: 80;
+}
+
+.beautify-panel.hidden {
+  display: none;
+}
+
+.beautify-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.beautify-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.beautify-switch {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.beautify-switch input {
+  display: none;
+}
+
+.beautify-switch-slider {
+  position: relative;
+  width: 30px;
+  height: 17px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  transition: background-color 0.2s;
+}
+
+.beautify-switch-slider::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 13px;
+  height: 13px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.beautify-switch input:checked + .beautify-switch-slider {
+  background-color: var(--accent-blue);
+}
+
+.beautify-switch input:checked + .beautify-switch-slider::before {
+  transform: translateX(13px);
+}
+
+.beautify-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+
+.beautify-preset {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 3px 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.62rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.beautify-preset:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.beautify-preset.active {
+  border-color: rgba(56, 189, 248, 0.6);
+  background: rgba(56, 189, 248, 0.12);
+  color: #e2e8f0;
+}
+
+.beautify-preset-swatch {
+  width: 100%;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.beautify-swatch-none {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(148, 163, 184, 0.45) 0,
+    rgba(148, 163, 184, 0.45) 3px,
+    transparent 3px,
+    transparent 7px
+  );
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.beautify-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  transition: opacity 0.15s;
+}
+
+.beautify-body.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.beautify-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.beautify-segment {
+  display: flex;
+  padding: 2px;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.beautify-segment button {
+  flex: 1;
+  padding: 4px 6px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.beautify-segment button:hover {
+  color: var(--text-main);
+}
+
+.beautify-segment button.active {
+  background: rgba(56, 189, 248, 0.2);
+  color: #7dd3fc;
+}
+
+.beautify-colors {
+  display: flex;
+  gap: 8px;
+}
+
+.beautify-color {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  padding: 4px 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.beautify-color.hidden {
+  display: none;
+}
+
+.beautify-color input[type="color"] {
+  width: 22px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.beautify-color input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.beautify-color input[type="color"]::-webkit-color-swatch {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+}
+
+.beautify-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.beautify-row label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.beautify-value {
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  color: #cbd5e1;
+}
+
+.beautify-row input[type="range"] {
+  width: 100%;
+  height: 18px;
+  accent-color: var(--accent-blue);
+  cursor: pointer;
+}
+
+.beautify-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.beautify-check input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent-blue);
+  cursor: pointer;
+}
+
 /* Secondary Save Button */
 .btn-secondary {
   display: inline-flex;
@@ -952,6 +1230,21 @@ body {
   background-color: #000000;
   display: inline-block;
   line-height: 0;
+}
+
+/* Beautify live preview: padding/background live on the container, the rounded
+   corner + shadow live on the canvas so annotation pixels stay untouched. */
+.canvas-container.beautify-preview {
+  padding: var(--beauty-padding, 0px);
+  background: var(--beauty-bg, #000000);
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.65);
+}
+
+.canvas-container.beautify-preview #screenshot-canvas {
+  border-radius: var(--beauty-radius, 0px);
+  box-shadow: var(--beauty-shadow, none);
 }
 
 .editor-workspace.panning,
