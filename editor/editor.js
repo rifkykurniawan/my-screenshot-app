@@ -72,6 +72,7 @@
   const canvasFrame = document.getElementById('canvas-frame');
   const frameBody = document.getElementById('frame-body');
   const frameAddress = document.getElementById('frame-address');
+  const frameAddressText = document.getElementById('frame-address-text');
 
   // Drawing & State
   let currentTool = 'rectangle'; // 'select' | 'crop' | 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'step' | 'highlighter' | 'blur' | 'text'
@@ -3632,6 +3633,17 @@
     return frame.type === 'browser' || frame.type === 'browser-dark';
   }
 
+  function setFrameAddressText(text) {
+    const target = frameAddressText || frameAddress;
+    if (!target) return;
+    target.textContent = text;
+    // Clear any inline sizing left by older builds; truncation is CSS-driven now
+    if (frameAddressText) {
+      frameAddressText.style.fontSize = '';
+      frameAddressText.style.transform = '';
+    }
+  }
+
   function syncUrlBarControl() {
     if (!toggleUrlBar) return;
     const locked = isBrowserFrameActive();
@@ -3728,7 +3740,7 @@
         '--frame-dot-gap', '--frame-pad-top', '--frame-pad-right', '--frame-pad-bottom',
         '--frame-pad-left', '--frame-notch-w', '--frame-notch-h', '--frame-home-w',
         '--frame-home-h', '--frame-home-offset'].forEach((prop) => frameBody.style.removeProperty(prop));
-      if (frameAddress) frameAddress.textContent = '';
+      setFrameAddressText('');
       syncUrlBarControl();
       return;
     }
@@ -3749,7 +3761,7 @@
       frameBody.style.setProperty('--frame-home-w', px(metrics.homeWidth));
       frameBody.style.setProperty('--frame-home-h', px(metrics.homeHeight));
       frameBody.style.setProperty('--frame-home-offset', px(metrics.homeOffset));
-      if (frameAddress) frameAddress.textContent = '';
+      setFrameAddressText('');
       syncUrlBarControl();
       return;
     }
@@ -3767,7 +3779,7 @@
     frameBody.style.setProperty('--frame-chrome-pad', px(metrics.sidePad));
     frameBody.style.setProperty('--frame-dot-size', px(metrics.dotSize));
     frameBody.style.setProperty('--frame-dot-gap', px(metrics.dotGap));
-    if (frameAddress) frameAddress.textContent = sourceUrl || getDomainToken() || sourceTitle || '';
+    setFrameAddressText(sourceUrl || getDomainToken() || sourceTitle || '');
     syncUrlBarControl();
   }
 
@@ -3915,7 +3927,7 @@
     const dotsEnd = dotX + metrics.dotSize * 3 + metrics.dotGap * 2;
     const pillRight = ox + contentW - metrics.sidePad;
     const pillWidth = Math.max(40, Math.min(
-      Math.round(contentW * 0.6),
+      Math.round(contentW * 0.72),
       pillRight - (dotsEnd + metrics.sidePad)
     ));
     const pillX = ox + (contentW - pillWidth) / 2;
@@ -3935,14 +3947,27 @@
       roundRect(targetCtx, pillX, pillY, pillWidth, metrics.pillHeight, metrics.pillHeight / 2);
       targetCtx.clip();
       targetCtx.fillStyle = theme.urlText;
-      targetCtx.font = `600 ${metrics.pillFont}px system-ui, -apple-system, sans-serif`;
       targetCtx.textAlign = 'center';
       targetCtx.textBaseline = 'middle';
 
+      targetCtx.font = `600 ${metrics.pillFont}px system-ui, -apple-system, sans-serif`;
+      const maxTextWidth = Math.max(1, pillWidth - 16);
+
+      // Keep the base font size and truncate with an end ellipsis when the URL
+      // does not fit the pill.
       let displayText = urlText;
-      const maxTextWidth = pillWidth - 16;
-      while (displayText.length > 12 && targetCtx.measureText(displayText).width > maxTextWidth) {
-        displayText = `${displayText.slice(0, -4)}...`;
+      if (targetCtx.measureText(displayText).width > maxTextWidth) {
+        let low = 0;
+        let high = displayText.length;
+        while (low < high) {
+          const mid = Math.ceil((low + high) / 2);
+          if (targetCtx.measureText(`${displayText.slice(0, mid)}…`).width <= maxTextWidth) {
+            low = mid;
+          } else {
+            high = mid - 1;
+          }
+        }
+        displayText = `${displayText.slice(0, low)}…`;
       }
       targetCtx.fillText(displayText, pillX + pillWidth / 2, pillY + metrics.pillHeight / 2);
       targetCtx.restore();
