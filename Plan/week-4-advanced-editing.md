@@ -15,7 +15,7 @@ Main files: `editor/editor.js`, `editor/editor.html`, `editor/editor.css`.
 - **Done when:** the copied image includes the styling.
 
 ## Day 23: Device / browser frames
-- [ ] Add browser window and phone frame mockups
+- [x] Add browser window and phone frame mockups
 - **Done when:** frames wrap the screenshot cleanly.
 
 ## Day 24: Stickers and watermark
