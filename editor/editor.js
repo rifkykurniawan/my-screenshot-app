@@ -327,6 +327,8 @@
 
   // Calculate banner height proportionally based on width
   function getBannerHeight() {
+    // Browser frames own the URL chrome, so the in-image banner would duplicate it
+    if (isBrowserFrameActive()) return 0;
     if (!showUrlBar || !sourceUrl) return 0;
     const imgWidth = baseImage ? (baseImage.naturalWidth || baseImage.width) : 1280;
     return Math.max(40, Math.round(imgWidth * 0.025));
@@ -3626,6 +3628,23 @@
     return { type };
   }
 
+  function isBrowserFrameActive() {
+    return frame.type === 'browser' || frame.type === 'browser-dark';
+  }
+
+  function syncUrlBarControl() {
+    if (!toggleUrlBar) return;
+    const locked = isBrowserFrameActive();
+    toggleUrlBar.disabled = locked;
+    const label = toggleUrlBar.closest('.toggle-control');
+    if (label) {
+      label.classList.toggle('disabled', locked);
+      label.title = locked
+        ? 'URL is shown inside the browser frame'
+        : 'Toggle URL bar at the top of the screenshot';
+    }
+  }
+
   function getFrameMetrics(width, height) {
     if (frame.type === 'none' || !width || !height) return null;
 
@@ -3710,6 +3729,7 @@
         '--frame-pad-left', '--frame-notch-w', '--frame-notch-h', '--frame-home-w',
         '--frame-home-h', '--frame-home-offset'].forEach((prop) => frameBody.style.removeProperty(prop));
       if (frameAddress) frameAddress.textContent = '';
+      syncUrlBarControl();
       return;
     }
 
@@ -3730,6 +3750,7 @@
       frameBody.style.setProperty('--frame-home-h', px(metrics.homeHeight));
       frameBody.style.setProperty('--frame-home-offset', px(metrics.homeOffset));
       if (frameAddress) frameAddress.textContent = '';
+      syncUrlBarControl();
       return;
     }
 
@@ -3746,7 +3767,8 @@
     frameBody.style.setProperty('--frame-chrome-pad', px(metrics.sidePad));
     frameBody.style.setProperty('--frame-dot-size', px(metrics.dotSize));
     frameBody.style.setProperty('--frame-dot-gap', px(metrics.dotGap));
-    if (frameAddress) frameAddress.textContent = getDomainToken() || sourceTitle || '';
+    if (frameAddress) frameAddress.textContent = sourceUrl || getDomainToken() || sourceTitle || '';
+    syncUrlBarControl();
   }
 
   function updateFrameControls() {
@@ -3797,9 +3819,12 @@
 
   function setFrameType(type) {
     const next = FRAME_TYPES.includes(type) ? type : 'none';
+    commitActiveText();
     frame = { ...frame, type: next };
     updateFrameControls();
     applyFramePreview();
+    // Browser frames hide the in-image URL banner, which changes canvas height
+    render();
     if (zoomMode === 'fit') zoomToFit();
     scheduleFrameSave();
   }
@@ -3903,7 +3928,7 @@
     targetCtx.lineWidth = 1;
     targetCtx.stroke();
 
-    const urlText = getDomainToken() || sourceTitle || '';
+    const urlText = sourceUrl || getDomainToken() || sourceTitle || '';
     if (urlText) {
       targetCtx.save();
       targetCtx.beginPath();
@@ -3913,7 +3938,13 @@
       targetCtx.font = `600 ${metrics.pillFont}px system-ui, -apple-system, sans-serif`;
       targetCtx.textAlign = 'center';
       targetCtx.textBaseline = 'middle';
-      targetCtx.fillText(urlText, pillX + pillWidth / 2, pillY + metrics.pillHeight / 2, pillWidth - 16);
+
+      let displayText = urlText;
+      const maxTextWidth = pillWidth - 16;
+      while (displayText.length > 12 && targetCtx.measureText(displayText).width > maxTextWidth) {
+        displayText = `${displayText.slice(0, -4)}...`;
+      }
+      targetCtx.fillText(displayText, pillX + pillWidth / 2, pillY + metrics.pillHeight / 2);
       targetCtx.restore();
     }
   }
