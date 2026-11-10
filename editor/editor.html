@@ -395,10 +395,18 @@
               <input type="range" id="watermark-opacity" min="5" max="100" step="5" value="45">
             </div>
             <div class="beautify-row">
-              <label for="watermark-size">Size <span id="watermark-size-val" class="beautify-value">15%</span></label>
-              <input type="range" id="watermark-size" min="4" max="40" step="1" value="15">
+              <label for="watermark-size">Size <span id="watermark-size-val" class="beautify-value">12%</span></label>
+              <input type="range" id="watermark-size" min="4" max="40" step="1" value="12">
             </div>
-            <div class="beautify-label">Position</div>
+            <label class="beautify-check watermark-tile-check">
+              <input type="checkbox" id="watermark-tile" checked>
+              <span>Repeat pattern (tiled)</span>
+            </label>
+            <div class="beautify-row hidden" id="watermark-angle-row">
+              <label for="watermark-angle">Angle <span id="watermark-angle-val" class="beautify-value">-30°</span></label>
+              <input type="range" id="watermark-angle" min="-60" max="60" step="5" value="-30">
+            </div>
+            <div class="beautify-label" id="watermark-position-label">Position</div>
             <div class="watermark-position-grid" id="watermark-position-grid" role="group" aria-label="Watermark position">
               <button type="button" class="watermark-pos-btn" data-position="top-left" title="Top left"></button>
               <button type="button" class="watermark-pos-btn" data-position="top-center" title="Top center"></button>

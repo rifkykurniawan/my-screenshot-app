@@ -1186,6 +1186,10 @@ body {
   pointer-events: none;
 }
 
+.watermark-panel .hidden {
+  display: none;
+}
+
 .watermark-colors {
   display: flex;
   gap: 8px;

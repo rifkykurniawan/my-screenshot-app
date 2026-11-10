@@ -76,7 +76,12 @@
   const watermarkOpacityVal = document.getElementById('watermark-opacity-val');
   const watermarkSize = document.getElementById('watermark-size');
   const watermarkSizeVal = document.getElementById('watermark-size-val');
+  const watermarkTile = document.getElementById('watermark-tile');
+  const watermarkAngleRow = document.getElementById('watermark-angle-row');
+  const watermarkAngle = document.getElementById('watermark-angle');
+  const watermarkAngleVal = document.getElementById('watermark-angle-val');
   const watermarkPositionGrid = document.getElementById('watermark-position-grid');
+  const watermarkPositionLabel = document.getElementById('watermark-position-label');
   const stickerPallet = document.getElementById('sticker-pallet');
   const stickerPalletBtns = document.querySelectorAll('.sticker-pallet-btn');
 
@@ -142,10 +147,12 @@
   const WATERMARK_DEFAULTS = {
     enabled: false,
     text: 'Screen Snap',
-    color: '#ffffff',
+    color: '#9ca3af',
     opacity: 0.45,
-    size: 15,
+    size: 12,
     position: 'bottom-right',
+    tile: true,
+    angle: -30,
   };
   const WATERMARK_POSITIONS = [
     'top-left', 'top-center', 'top-right',
@@ -2398,9 +2405,26 @@
     }
     if (watermarkSize) {
       watermarkSize.addEventListener('input', (e) => {
-        const val = parseInt(e.target.value, 10) || 15;
+        const val = parseInt(e.target.value, 10) || 12;
         watermark = { ...watermark, size: val };
         if (watermarkSizeVal) watermarkSizeVal.textContent = `${val}%`;
+        scheduleWatermarkSave();
+        render();
+      });
+    }
+    if (watermarkTile) {
+      watermarkTile.addEventListener('change', () => {
+        watermark = { ...watermark, tile: watermarkTile.checked };
+        updateWatermarkControls();
+        scheduleWatermarkSave();
+        render();
+      });
+    }
+    if (watermarkAngle) {
+      watermarkAngle.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10) || 0;
+        watermark = { ...watermark, angle: val };
+        if (watermarkAngleVal) watermarkAngleVal.textContent = `${val}°`;
         scheduleWatermarkSave();
         render();
       });
@@ -3734,6 +3758,8 @@
       opacity: clampNumber(source.opacity, 0.05, 1, WATERMARK_DEFAULTS.opacity),
       size: Math.round(clampNumber(source.size, 4, 40, WATERMARK_DEFAULTS.size)),
       position: WATERMARK_POSITIONS.includes(source.position) ? source.position : WATERMARK_DEFAULTS.position,
+      tile: typeof source.tile === 'boolean' ? source.tile : WATERMARK_DEFAULTS.tile,
+      angle: Math.round(clampNumber(source.angle, -60, 60, WATERMARK_DEFAULTS.angle)),
     };
   }
 
@@ -3750,7 +3776,13 @@
     if (watermarkOpacityVal) watermarkOpacityVal.textContent = `${Math.round(watermark.opacity * 100)}%`;
     if (watermarkSize) watermarkSize.value = String(watermark.size);
     if (watermarkSizeVal) watermarkSizeVal.textContent = `${watermark.size}%`;
+    if (watermarkTile) watermarkTile.checked = watermark.tile;
+    if (watermarkAngle) watermarkAngle.value = String(watermark.angle);
+    if (watermarkAngleVal) watermarkAngleVal.textContent = `${watermark.angle}°`;
+    if (watermarkAngleRow) watermarkAngleRow.classList.toggle('hidden', !watermark.tile);
+    if (watermarkPositionLabel) watermarkPositionLabel.classList.toggle('hidden', watermark.tile);
     if (watermarkPositionGrid) {
+      watermarkPositionGrid.classList.toggle('hidden', watermark.tile);
       watermarkPositionGrid.querySelectorAll('.watermark-pos-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.position === watermark.position);
       });
@@ -3845,6 +3877,15 @@
   }
 
   function drawWatermark(imgWidth, imgHeight, bannerHeight) {
+    if (!watermark.enabled) return;
+    const text = (watermark.text || '').trim();
+    if (!text) return;
+
+    if (watermark.tile) {
+      drawTiledWatermark(text, imgWidth, imgHeight, bannerHeight);
+      return;
+    }
+
     const layout = getWatermarkLayout(imgWidth, imgHeight, bannerHeight);
     if (!layout) return;
 
@@ -3859,6 +3900,41 @@
     ctx.shadowOffsetX = Math.max(1, Math.round(layout.fontSize * 0.03));
     ctx.shadowOffsetY = Math.max(1, Math.round(layout.fontSize * 0.03));
     ctx.fillText(layout.text, layout.x, layout.y);
+    ctx.restore();
+  }
+
+  function drawTiledWatermark(text, imgWidth, imgHeight, bannerHeight) {
+    const fontSize = Math.max(12, Math.round(imgWidth * (watermark.size / 100) * 0.35));
+    const font = `700 ${fontSize}px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif`;
+
+    ctx.save();
+    // Keep the pattern inside the screenshot and off the URL banner
+    ctx.beginPath();
+    ctx.rect(0, bannerHeight, imgWidth, imgHeight);
+    ctx.clip();
+
+    ctx.globalAlpha = watermark.opacity;
+    ctx.font = font;
+    ctx.fillStyle = watermark.color;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    ctx.translate(imgWidth / 2, bannerHeight + imgHeight / 2);
+    ctx.rotate((watermark.angle * Math.PI) / 180);
+
+    const textWidth = ctx.measureText(text).width;
+    const stepX = Math.max(textWidth * 1.6, fontSize * 3);
+    const stepY = Math.max(fontSize * 3.4, 28);
+    const reach = Math.hypot(imgWidth, imgHeight) / 2 + Math.max(stepX, stepY);
+    const cols = Math.ceil(reach / stepX);
+    const rows = Math.ceil(reach / stepY);
+
+    for (let row = -rows; row <= rows; row++) {
+      for (let col = -cols; col <= cols; col++) {
+        ctx.fillText(text, col * stepX, row * stepY);
+      }
+    }
+
     ctx.restore();
   }
 
