@@ -32,7 +32,8 @@ A lightweight, productivity-focused Chrome extension for capturing and annotatin
 - **Adjustable Stroke / Font Size**: Choose from 4 line weights & corresponding font sizes (Thin: 2px / 16px, Medium: 4px / 22px, Thick: 7px / 32px, Bold: 11px / 44px).
 - **Zoom & Pan**: Zoom the canvas with `Ctrl` + mouse wheel, the floating zoom controls, or `Ctrl + =` / `Ctrl + -`. Press **Fit** (`Ctrl + 0`) to fit the whole screenshot in the window or **1:1** (`Ctrl + 1`) for actual pixels, then hold `Space` and drag to pan. Drawings, text, crops, and selection handles are mapped correctly at every zoom level, so annotations always land exactly where you click.
 - **Beautify Mode**: Wrap the screenshot in a polished presentation frame with a solid or gradient background, adjustable padding and rounded corners, and an optional drop shadow. Pick a one-click preset (Sunset, Ocean, Grape, Mint, Midnight, Snow) or fine-tune the colors, then Copy or Save — the styling is baked into the exported image for every format, including PDF.
-- **Device & Browser Frames**: Wrap the screenshot in a light or dark browser window mockup (traffic lights plus the page URL in the address pill) or a phone mockup with bezel, notch and home indicator. Browser frames move the URL into the frame and hide the duplicated in-image URL banner. Frames combine with Beautify, are previewed live, and are composited into every export format.
+- **Stickers**: Stamp emoji stickers (⭐ ✅ ❌ 🔥 💡 📌 ⚠️ 🎯 🚀 and more) anywhere on the screenshot. Stickers are regular annotations, so they can be moved, resized, erased, undone, and exported just like any other shape.
+- **Text Watermark**: Add a custom text watermark with adjustable color, opacity, and size. Enable **Repeat pattern (tiled)** to cover the screenshot with diagonal watermarks (with an adjustable angle), or turn it off to place a single watermark using the 3×3 position grid. The watermark is applied above the screenshot and below annotations, follows crop and zoom changes, and is baked into every copied or saved image.
 - **History & Undo/Redo**: Full undo (`Ctrl+Z`) and redo (`Ctrl+Y` / `Ctrl+Shift+Z`) support with state preservation when toggling the URL header.
 - **One-Click Copy & Auto-Close**: Click **Copy to Clipboard** or press `Ctrl+C` / `Enter`. The PNG image is written directly to your system clipboard, and the tab closes automatically after confirmation.
 - **Save as PNG / JPEG / WebP / PDF**: Click **Save** or press `Ctrl+S`, pick a format from the selector, and adjust the quality slider for lossy formats. JPEG and PDF exports are flattened onto white so transparent regions never turn black. PDF exports produce a single page that exactly fits the annotated image, ready to attach to emails, tickets, or reports. Files download directly to your Downloads folder using a filename template such as `{domain}_{date}_{time}` (see [Filename Templates](#filename-templates)).
@@ -120,6 +121,8 @@ The default template is `screen-snap_{date}_{time}`, and the format's extension 
 | `H` | Select Highlighter tool (Hold `Shift` to snap straight horizontal highlight) |
 | `B` | Select Blur / Redact tool (Hold `Shift` to constrain to square region) |
 | `T` | Select Text tool (Double-click existing text in Select mode to edit) |
+| `S` | Select Sticker tool (Pick an emoji, then click to stamp) |
+| `W` | Toggle the Watermark panel |
 | `Delete` or `Backspace` | Delete selected annotation |
 | `Arrow Keys` *(+ Shift for 10px)* | Nudge selected annotation |
 | `Enter` *(while typing text)* | Commit text annotation |

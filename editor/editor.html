@@ -97,6 +97,14 @@
             <line x1="12" y1="4" x2="12" y2="20"></line>
           </svg>
         </button>
+        <button class="tool-btn" data-tool="sticker" title="Sticker Tool (S)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M8.5 14.5s1.2 1.8 3.5 1.8 3.5-1.8 3.5-1.8"></path>
+            <line x1="9" y1="9.5" x2="9.01" y2="9.5"></line>
+            <line x1="15" y1="9.5" x2="15.01" y2="9.5"></line>
+          </svg>
+        </button>
       </div>
 
       <div class="toolbar-divider"></div>
@@ -359,36 +367,57 @@
           </div>
         </div>
       </div>
-      <div class="frame-control">
-        <button type="button" id="btn-frame" class="btn-icon frame-toggle-btn" title="Frame (browser &amp; phone mockups)" aria-haspopup="dialog" aria-expanded="false" aria-controls="frame-panel">
+      <div class="watermark-control">
+        <button type="button" id="btn-watermark" class="btn-icon watermark-toggle-btn" title="Watermark (W)" aria-haspopup="dialog" aria-expanded="false" aria-controls="watermark-panel">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-            <path d="M2 9h20"></path>
-            <circle cx="6" cy="6.5" r="0.6" fill="currentColor"></circle>
-            <circle cx="9" cy="6.5" r="0.6" fill="currentColor"></circle>
+            <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"></path>
           </svg>
         </button>
-        <div class="frame-panel hidden" id="frame-panel" role="dialog" aria-label="Frame settings">
-          <div class="beautify-header">
-            <span class="beautify-title">Frame</span>
+        <div class="watermark-panel hidden" id="watermark-panel" role="dialog" aria-label="Watermark settings">
+          <div class="watermark-header">
+            <span class="beautify-title">Watermark</span>
+            <label class="beautify-switch" title="Enable watermark">
+              <input type="checkbox" id="watermark-enabled">
+              <span class="beautify-switch-slider"></span>
+            </label>
           </div>
-          <div class="frame-presets" id="frame-presets" role="group" aria-label="Frame styles">
-            <button type="button" class="frame-preset" data-frame="none" title="No frame">
-              <span class="frame-swatch frame-swatch-none"></span>
-              <span>Off</span>
-            </button>
-            <button type="button" class="frame-preset" data-frame="browser" title="Light browser window">
-              <span class="frame-swatch frame-swatch-browser"></span>
-              <span>Browser</span>
-            </button>
-            <button type="button" class="frame-preset" data-frame="browser-dark" title="Dark browser window">
-              <span class="frame-swatch frame-swatch-browser-dark"></span>
-              <span>Dark</span>
-            </button>
-            <button type="button" class="frame-preset" data-frame="phone" title="Phone mockup">
-              <span class="frame-swatch frame-swatch-phone"></span>
-              <span>Phone</span>
-            </button>
+          <div class="watermark-body" id="watermark-body">
+            <label class="beautify-label" for="watermark-text">Text</label>
+            <input type="text" id="watermark-text" class="template-input" maxlength="80" spellcheck="false" autocomplete="off" placeholder="Screen Snap">
+            <div class="watermark-colors">
+              <label class="beautify-color" title="Watermark color">
+                <input type="color" id="watermark-color">
+                <span>Color</span>
+              </label>
+            </div>
+            <div class="beautify-row">
+              <label for="watermark-opacity">Opacity <span id="watermark-opacity-val" class="beautify-value">45%</span></label>
+              <input type="range" id="watermark-opacity" min="5" max="100" step="5" value="45">
+            </div>
+            <div class="beautify-row">
+              <label for="watermark-size">Size <span id="watermark-size-val" class="beautify-value">12%</span></label>
+              <input type="range" id="watermark-size" min="4" max="40" step="1" value="12">
+            </div>
+            <label class="beautify-check watermark-tile-check">
+              <input type="checkbox" id="watermark-tile" checked>
+              <span>Repeat pattern (tiled)</span>
+            </label>
+            <div class="beautify-row hidden" id="watermark-angle-row">
+              <label for="watermark-angle">Angle <span id="watermark-angle-val" class="beautify-value">-30°</span></label>
+              <input type="range" id="watermark-angle" min="-60" max="60" step="5" value="-30">
+            </div>
+            <div class="beautify-label" id="watermark-position-label">Position</div>
+            <div class="watermark-position-grid" id="watermark-position-grid" role="group" aria-label="Watermark position">
+              <button type="button" class="watermark-pos-btn" data-position="top-left" title="Top left"></button>
+              <button type="button" class="watermark-pos-btn" data-position="top-center" title="Top center"></button>
+              <button type="button" class="watermark-pos-btn" data-position="top-right" title="Top right"></button>
+              <button type="button" class="watermark-pos-btn" data-position="middle-left" title="Middle left"></button>
+              <button type="button" class="watermark-pos-btn" data-position="center" title="Center"></button>
+              <button type="button" class="watermark-pos-btn" data-position="middle-right" title="Middle right"></button>
+              <button type="button" class="watermark-pos-btn" data-position="bottom-left" title="Bottom left"></button>
+              <button type="button" class="watermark-pos-btn" data-position="bottom-center" title="Bottom center"></button>
+              <button type="button" class="watermark-pos-btn" data-position="bottom-right" title="Bottom right"></button>
+            </div>
           </div>
         </div>
       </div>
@@ -466,6 +495,34 @@
       <div class="zoom-divider"></div>
       <button type="button" class="zoom-text-btn" id="btn-zoom-fit" title="Fit to window (Ctrl+0)">Fit</button>
       <button type="button" class="zoom-text-btn" id="btn-zoom-actual" title="Actual size - 100% (Ctrl+1)">1:1</button>
+    </div>
+
+    <!-- Sticker Palette (shown when the Sticker tool is active) -->
+    <div class="sticker-pallet" id="sticker-pallet" role="group" aria-label="Sticker palette">
+      <button type="button" class="sticker-pallet-btn" data-emoji="⭐" title="Star">⭐</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="✅" title="Check">✅</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="❌" title="Cross">❌</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="❗" title="Exclamation">❗</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="❓" title="Question">❓</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="🔥" title="Fire">🔥</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="👍" title="Thumbs up">👍</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="👎" title="Thumbs down">👎</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="💡" title="Idea">💡</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="📌" title="Pin">📌</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="🔒" title="Lock">🔒</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="⚠️" title="Warning">⚠️</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="🎯" title="Target">🎯</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="🚀" title="Rocket">🚀</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="🐛" title="Bug">🐛</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="💬" title="Comment">💬</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="📝" title="Note">📝</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="⏰" title="Clock">⏰</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="🎉" title="Party">🎉</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="✨" title="Sparkles">✨</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="👀" title="Eyes">👀</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="💯" title="Hundred">💯</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="❤️" title="Heart">❤️</button>
+      <button type="button" class="sticker-pallet-btn" data-emoji="🙌" title="Celebrate">🙌</button>
     </div>
   </main>
 
