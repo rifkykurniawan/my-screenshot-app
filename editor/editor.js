@@ -66,6 +66,19 @@
   const beautifyRadius = document.getElementById('beautify-radius');
   const beautifyRadiusVal = document.getElementById('beautify-radius-val');
   const beautifyShadow = document.getElementById('beautify-shadow');
+  const btnWatermark = document.getElementById('btn-watermark');
+  const watermarkPanel = document.getElementById('watermark-panel');
+  const watermarkEnable = document.getElementById('watermark-enabled');
+  const watermarkBody = document.getElementById('watermark-body');
+  const watermarkText = document.getElementById('watermark-text');
+  const watermarkColor = document.getElementById('watermark-color');
+  const watermarkOpacity = document.getElementById('watermark-opacity');
+  const watermarkOpacityVal = document.getElementById('watermark-opacity-val');
+  const watermarkSize = document.getElementById('watermark-size');
+  const watermarkSizeVal = document.getElementById('watermark-size-val');
+  const watermarkPositionGrid = document.getElementById('watermark-position-grid');
+  const stickerPallet = document.getElementById('sticker-pallet');
+  const stickerPalletBtns = document.querySelectorAll('.sticker-pallet-btn');
 
   // Drawing & State
   let currentTool = 'rectangle'; // 'select' | 'crop' | 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'step' | 'highlighter' | 'blur' | 'text'
@@ -75,6 +88,7 @@
   let currentOpacity = 0.4;     // 40% default semi-transparent opacity for highlighter
   let currentRedactMode = 'pixelate'; // 'pixelate' | 'blur'
   let currentRedactIntensity = 3;      // 1 to 5 (default: 3)
+  let currentSticker = '⭐';            // Emoji used by the sticker stamp tool
   let currentHighlighterPoints = [];
   let showUrlBar = true;
   let isDrawing = false;
@@ -122,6 +136,24 @@
   };
   let beautify = { ...BEAUTIFY_DEFAULTS };
   let beautifySaveTimer = null;
+
+  // Watermark State
+  const WATERMARK_STORAGE_KEY = 'watermarkSettings';
+  const WATERMARK_DEFAULTS = {
+    enabled: false,
+    text: 'Screen Snap',
+    color: '#ffffff',
+    opacity: 0.45,
+    size: 15,
+    position: 'bottom-right',
+  };
+  const WATERMARK_POSITIONS = [
+    'top-left', 'top-center', 'top-right',
+    'middle-left', 'center', 'middle-right',
+    'bottom-left', 'bottom-center', 'bottom-right',
+  ];
+  let watermark = { ...WATERMARK_DEFAULTS };
+  let watermarkSaveTimer = null;
 
   // Crop State
   let cropBox = null; // { x, y, w, h } in screenshot baseImage coordinates
@@ -188,7 +220,8 @@
     setupEventListeners();
     setTool(currentTool);
     updateHistoryButtons();
-    await Promise.all([loadFilenameTemplate(), loadBeautifySettings()]);
+    await Promise.all([loadFilenameTemplate(), loadBeautifySettings(), loadWatermarkSettings()]);
+    updateStickerPalletSelection();
     await loadScreenshot();
     updateTemplatePreview();
   }
@@ -326,27 +359,30 @@
     // 2. Draw Screenshot Image below the banner
     ctx.drawImage(baseImage, 0, bannerHeight, imgWidth, imgHeight);
 
-    // 3. Draw Committed Shapes
+    // 3. Draw the text watermark above the image, below annotations
+    drawWatermark(imgWidth, imgHeight, bannerHeight);
+
+    // 4. Draw Committed Shapes
     for (const shape of shapes) {
       drawShape(shape, bannerHeight, false);
     }
 
-    // 4. Draw Live Dragging Preview Shape
+    // 5. Draw Live Dragging Preview Shape
     if (dragPreviewShape) {
       drawShape(dragPreviewShape, bannerHeight, true);
     }
 
-    // 5. Draw Selection Handles & Bounding Box (when in select tool and shape selected)
+    // 6. Draw Selection Handles & Bounding Box (when in select tool and shape selected)
     if (currentTool === 'select' && selectedShapeIndex >= 0 && selectedShapeIndex < shapes.length) {
       drawSelectionUI(shapes[selectedShapeIndex], bannerHeight);
     }
 
-    // 6. Draw Eraser Hover Highlight (when in eraser tool and hovering a shape)
+    // 7. Draw Eraser Hover Highlight (when in eraser tool and hovering a shape)
     if (currentTool === 'eraser' && hoveredEraserIndex >= 0 && hoveredEraserIndex < shapes.length) {
       drawEraserPreview(shapes[hoveredEraserIndex], bannerHeight);
     }
 
-    // 7. Draw Crop Overlay (when in crop tool and cropBox is defined)
+    // 8. Draw Crop Overlay (when in crop tool and cropBox is defined)
     if (currentTool === 'crop' && cropBox) {
       drawCropUI(cropBox, bannerHeight);
     }
@@ -523,6 +559,8 @@
       drawStepMarker(shape, bannerOffset, isPreview);
     } else if (shape.type === 'text') {
       drawText(shape.text, shape.x, shape.y + bannerOffset, shape.color, shape.fontSize);
+    } else if (shape.type === 'sticker') {
+      drawSticker(shape.emoji, shape.x, shape.y + bannerOffset, shape.size);
     }
   }
 
@@ -732,6 +770,19 @@
       ctx.fillText(lines[i], x, y + (i * lineHeight));
     }
 
+    ctx.restore();
+  }
+
+  // Draw an emoji sticker centered on its stamp position
+  function drawSticker(emoji, x, y, size) {
+    if (!emoji) return;
+    const fontSize = Math.max(8, size || 48);
+    ctx.save();
+    ctx.font = `${fontSize}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Segoe UI Symbol", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#000000';
+    ctx.fillText(emoji, x, y);
     ctx.restore();
   }
 
@@ -1139,6 +1190,10 @@
       const r = getStepMetrics(shape.stroke || 4).radius;
       return { x: shape.x - r, y: shape.y - r, w: r * 2, h: r * 2 };
     }
+    if (shape.type === 'sticker') {
+      const s = shape.size || 48;
+      return { x: shape.x - s / 2, y: shape.y - s / 2, w: s, h: s };
+    }
     if (shape.type === 'text') {
       const lines = (shape.text || '').split('\n');
       ctx.save();
@@ -1197,6 +1252,10 @@
       const r = getStepMetrics(shape.stroke || 4).radius;
       return Math.hypot(px - shape.x, py - shape.y) <= r + 6;
     }
+    if (shape.type === 'sticker') {
+      const b = getShapeBounds(shape);
+      return px >= b.x - 4 && px <= b.x + b.w + 4 && py >= b.y - 4 && py <= b.y + b.h + 4;
+    }
     if (shape.type === 'text') {
       const b = getShapeBounds(shape);
       return px >= b.x - 6 && px <= b.x + b.w + 6 && py >= b.y - 6 && py <= b.y + b.h + 6;
@@ -1234,7 +1293,7 @@
         { id: 'end', x: shape.x2, y: shape.y2, cursor: 'crosshair', type: 'point' }
       ];
     }
-    if (shape.type === 'step' || shape.type === 'text' || shape.type === 'highlighter') {
+    if (shape.type === 'step' || shape.type === 'text' || shape.type === 'sticker' || shape.type === 'highlighter') {
       const b = getShapeBounds(shape);
       return [
         { id: 'nw', x: b.x, y: b.y, cursor: 'nwse-resize' },
@@ -1429,6 +1488,11 @@
       });
     }
 
+    if (shape.type === 'sticker' && shape.emoji) {
+      currentSticker = shape.emoji;
+      updateStickerPalletSelection();
+    }
+
     if (shape.type === 'highlighter' && shape.opacity !== undefined) {
       currentOpacity = shape.opacity;
       if (opacitySlider) opacitySlider.value = Math.round(shape.opacity * 100);
@@ -1474,7 +1538,7 @@
 
   // Move transformation helper
   function applyMove(target, snapshot, dx, dy) {
-    if (target.type === 'rectangle' || target.type === 'ellipse' || target.type === 'blur' || target.type === 'text' || target.type === 'step') {
+    if (target.type === 'rectangle' || target.type === 'ellipse' || target.type === 'blur' || target.type === 'text' || target.type === 'step' || target.type === 'sticker') {
       target.x = snapshot.x + dx;
       target.y = snapshot.y + dy;
     } else if (target.type === 'line' || target.type === 'arrow') {
@@ -1537,6 +1601,15 @@
       const bounds = getShapeBounds(snapshot);
       const scale = Math.max(0.4, Math.min(3.5, (bounds.w + dx) / Math.max(bounds.w, 10)));
       target.fontSize = Math.max(12, Math.min(100, Math.round((snapshot.fontSize || 22) * scale)));
+      return;
+    }
+
+    if (target.type === 'sticker') {
+      const origSize = snapshot.size || 48;
+      const origDist = Math.max(1, origSize / Math.SQRT2);
+      const currentDist = Math.hypot(currentX - snapshot.x, currentY - snapshot.y);
+      const scale = Math.max(0.3, Math.min(6, currentDist / origDist));
+      target.size = Math.max(16, Math.min(480, Math.round(origSize * scale)));
       return;
     }
 
@@ -1967,6 +2040,14 @@
       });
     });
 
+    // Sticker palette
+    stickerPalletBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentSticker = btn.dataset.emoji || currentSticker;
+        updateStickerPalletSelection();
+      });
+    });
+
     // Color buttons
     colorBtns.forEach(btn => {
       btn.addEventListener('mousedown', (e) => {
@@ -2193,6 +2274,7 @@
         e.stopPropagation();
         if (beautifyPanel.classList.contains('hidden')) {
           closeTemplatePanel();
+          closeWatermarkPanel();
           openBeautifyPanel();
         } else {
           closeBeautifyPanel();
@@ -2264,6 +2346,82 @@
       closeTemplatePanel();
     });
 
+    // Watermark popover
+    if (btnWatermark && watermarkPanel) {
+      btnWatermark.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (watermarkPanel.classList.contains('hidden')) {
+          closeTemplatePanel();
+          closeBeautifyPanel();
+          openWatermarkPanel();
+        } else {
+          closeWatermarkPanel();
+        }
+      });
+    }
+    if (watermarkEnable) {
+      watermarkEnable.addEventListener('change', () => {
+        watermark = { ...watermark, enabled: watermarkEnable.checked };
+        updateWatermarkControls();
+        scheduleWatermarkSave();
+        render();
+      });
+    }
+    if (watermarkText) {
+      watermarkText.addEventListener('input', () => {
+        watermark = { ...watermark, text: watermarkText.value };
+        scheduleWatermarkSave();
+        render();
+      });
+      watermarkText.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          watermarkText.blur();
+        }
+      });
+    }
+    if (watermarkColor) {
+      watermarkColor.addEventListener('input', (e) => {
+        watermark = { ...watermark, color: e.target.value };
+        scheduleWatermarkSave();
+        render();
+      });
+    }
+    if (watermarkOpacity) {
+      watermarkOpacity.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10) || 45;
+        watermark = { ...watermark, opacity: val / 100 };
+        if (watermarkOpacityVal) watermarkOpacityVal.textContent = `${val}%`;
+        scheduleWatermarkSave();
+        render();
+      });
+    }
+    if (watermarkSize) {
+      watermarkSize.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10) || 15;
+        watermark = { ...watermark, size: val };
+        if (watermarkSizeVal) watermarkSizeVal.textContent = `${val}%`;
+        scheduleWatermarkSave();
+        render();
+      });
+    }
+    if (watermarkPositionGrid) {
+      watermarkPositionGrid.addEventListener('click', (e) => {
+        const btn = e.target.closest('.watermark-pos-btn');
+        if (!btn) return;
+        watermark = { ...watermark, position: btn.dataset.position || watermark.position };
+        updateWatermarkControls();
+        scheduleWatermarkSave();
+        render();
+      });
+    }
+    document.addEventListener('mousedown', (e) => {
+      if (!watermarkPanel || watermarkPanel.classList.contains('hidden')) return;
+      if (watermarkPanel.contains(e.target)) return;
+      if (btnWatermark && btnWatermark.contains(e.target)) return;
+      closeWatermarkPanel();
+    });
+
     // Crop action buttons
     if (btnCropApply) btnCropApply.addEventListener('click', applyCrop);
     if (btnCropCancel) btnCropCancel.addEventListener('click', cancelCrop);
@@ -2296,7 +2454,7 @@
   }
 
   function setTool(tool) {
-    if (tool !== 'select' && tool !== 'crop' && tool !== 'eraser' && tool !== 'rectangle' && tool !== 'ellipse' && tool !== 'line' && tool !== 'arrow' && tool !== 'step' && tool !== 'highlighter' && tool !== 'blur' && tool !== 'text') return;
+    if (tool !== 'select' && tool !== 'crop' && tool !== 'eraser' && tool !== 'rectangle' && tool !== 'ellipse' && tool !== 'line' && tool !== 'arrow' && tool !== 'step' && tool !== 'highlighter' && tool !== 'blur' && tool !== 'text' && tool !== 'sticker') return;
     if (activeTextInput && tool !== 'text') {
       commitActiveText();
     }
@@ -2323,6 +2481,12 @@
     canvas.classList.toggle('tool-text', tool === 'text');
     canvas.classList.toggle('tool-highlighter', tool === 'highlighter');
     canvas.classList.toggle('tool-step', tool === 'step');
+    canvas.classList.toggle('tool-sticker', tool === 'sticker');
+
+    if (stickerPallet) {
+      stickerPallet.classList.toggle('visible', tool === 'sticker');
+      if (tool === 'sticker') updateStickerPalletSelection();
+    }
 
     if (tool !== 'select') {
       if (selectedShapeIndex >= 0) {
@@ -2364,6 +2528,12 @@
     }
 
     render();
+  }
+
+  function updateStickerPalletSelection() {
+    stickerPalletBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.emoji === currentSticker);
+    });
   }
 
   // Active Text Annotation Operations
@@ -2524,6 +2694,24 @@
     startX = coords.x;
     startY = coords.y - bannerHeight;
 
+    // Sticker tool: stamp the selected emoji at the click position
+    if (currentTool === 'sticker') {
+      const imgWidth = baseImage ? (baseImage.naturalWidth || baseImage.width) : 1280;
+      const imgHeight = baseImage ? (baseImage.naturalHeight || baseImage.height) : 720;
+      const size = Math.round(Math.max(32, Math.min(240, Math.min(imgWidth, imgHeight) * 0.1)));
+      const half = size / 2;
+      shapes.push({
+        type: 'sticker',
+        emoji: currentSticker,
+        x: Math.max(half, Math.min(imgWidth - half, startX)),
+        y: Math.max(half, Math.min(imgHeight - half, startY)),
+        size
+      });
+      commitHistory();
+      render();
+      return;
+    }
+
     // Crop mode interaction
     if (currentTool === 'crop') {
       const handle = hitTestCropHandles(cropBox, startX, startY);
@@ -2636,6 +2824,12 @@
     const bannerHeight = getBannerHeight();
     const currentX = coords.x;
     const currentY = coords.y - bannerHeight;
+
+    // Sticker tool uses a copy cursor and stamps on click
+    if (currentTool === 'sticker') {
+      canvas.style.cursor = 'copy';
+      return;
+    }
 
     // Handle cursor update when not dragging in select mode
     if (currentTool === 'select' && !dragMode) {
@@ -3072,6 +3266,13 @@
       return;
     }
 
+    // Escape closes the watermark popover
+    if (e.key === 'Escape' && watermarkPanel && !watermarkPanel.classList.contains('hidden')) {
+      e.preventDefault();
+      closeWatermarkPanel();
+      return;
+    }
+
     // If typing inside an input or textarea, do not intercept keystrokes
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
       return;
@@ -3185,6 +3386,12 @@
         return;
       } else if (key === 't') {
         setTool('text');
+        return;
+      } else if (key === 's') {
+        setTool('sticker');
+        return;
+      } else if (key === 'w') {
+        toggleWatermarkPanel();
         return;
       } else if (key === 'n') {
         setTool('step');
@@ -3515,6 +3722,144 @@
     beautify = normalizeBeautifySettings(stored);
     updateBeautifyControls();
     applyBeautifyPreview();
+  }
+
+  // Watermark: text-only overlay with position and opacity
+  function normalizeWatermarkSettings(raw) {
+    const source = raw && typeof raw === 'object' ? raw : {};
+    return {
+      enabled: typeof source.enabled === 'boolean' ? source.enabled : WATERMARK_DEFAULTS.enabled,
+      text: typeof source.text === 'string' ? source.text : WATERMARK_DEFAULTS.text,
+      color: typeof source.color === 'string' ? source.color : WATERMARK_DEFAULTS.color,
+      opacity: clampNumber(source.opacity, 0.05, 1, WATERMARK_DEFAULTS.opacity),
+      size: Math.round(clampNumber(source.size, 4, 40, WATERMARK_DEFAULTS.size)),
+      position: WATERMARK_POSITIONS.includes(source.position) ? source.position : WATERMARK_DEFAULTS.position,
+    };
+  }
+
+  function updateWatermarkControls() {
+    if (watermarkEnable) watermarkEnable.checked = watermark.enabled;
+    if (watermarkBody) watermarkBody.classList.toggle('disabled', !watermark.enabled);
+    if (btnWatermark) {
+      btnWatermark.classList.toggle('active', watermark.enabled);
+      btnWatermark.setAttribute('aria-pressed', watermark.enabled ? 'true' : 'false');
+    }
+    if (watermarkText) watermarkText.value = watermark.text;
+    if (watermarkColor) watermarkColor.value = watermark.color;
+    if (watermarkOpacity) watermarkOpacity.value = String(Math.round(watermark.opacity * 100));
+    if (watermarkOpacityVal) watermarkOpacityVal.textContent = `${Math.round(watermark.opacity * 100)}%`;
+    if (watermarkSize) watermarkSize.value = String(watermark.size);
+    if (watermarkSizeVal) watermarkSizeVal.textContent = `${watermark.size}%`;
+    if (watermarkPositionGrid) {
+      watermarkPositionGrid.querySelectorAll('.watermark-pos-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.position === watermark.position);
+      });
+    }
+  }
+
+  function saveWatermarkSettings() {
+    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) return;
+    try {
+      const result = chrome.storage.local.set({ [WATERMARK_STORAGE_KEY]: watermark });
+      if (result && typeof result.catch === 'function') result.catch(() => {});
+    } catch (err) {
+      console.error('Error saving watermark settings:', err);
+    }
+  }
+
+  function scheduleWatermarkSave() {
+    if (watermarkSaveTimer) clearTimeout(watermarkSaveTimer);
+    watermarkSaveTimer = setTimeout(() => {
+      watermarkSaveTimer = null;
+      saveWatermarkSettings();
+    }, 350);
+  }
+
+  async function loadWatermarkSettings() {
+    let stored = null;
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      try {
+        const data = await chrome.storage.local.get([WATERMARK_STORAGE_KEY]);
+        stored = data ? data[WATERMARK_STORAGE_KEY] : null;
+      } catch (err) {
+        stored = null;
+      }
+    }
+    watermark = normalizeWatermarkSettings(stored);
+    updateWatermarkControls();
+  }
+
+  function openWatermarkPanel() {
+    if (!watermarkPanel) return;
+    updateWatermarkControls();
+    watermarkPanel.classList.remove('hidden');
+    if (btnWatermark) btnWatermark.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeWatermarkPanel() {
+    if (!watermarkPanel) return;
+    watermarkPanel.classList.add('hidden');
+    if (btnWatermark) btnWatermark.setAttribute('aria-expanded', 'false');
+  }
+
+  function toggleWatermarkPanel() {
+    if (!watermarkPanel) return;
+    if (watermarkPanel.classList.contains('hidden')) {
+      closeTemplatePanel();
+      closeBeautifyPanel();
+      openWatermarkPanel();
+    } else {
+      closeWatermarkPanel();
+    }
+  }
+
+  function getWatermarkLayout(imgWidth, imgHeight, bannerHeight) {
+    if (!watermark.enabled) return null;
+    const text = (watermark.text || '').trim();
+    if (!text) return null;
+
+    const fontSize = Math.max(12, Math.round(imgWidth * (watermark.size / 100) * 0.35));
+    const font = `700 ${fontSize}px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif`;
+    ctx.save();
+    ctx.font = font;
+    const width = ctx.measureText(text).width;
+    ctx.restore();
+
+    const height = fontSize * 1.25;
+    const margin = Math.max(12, Math.round(Math.min(imgWidth, imgHeight) * 0.035));
+    const parts = (watermark.position || 'bottom-right').split('-');
+    const vAlign = parts[0] === 'top' ? 'top' : (parts[0] === 'bottom' ? 'bottom' : 'middle');
+    const hAlign = parts[1] === 'left' ? 'left' : (parts[1] === 'right' ? 'right' : 'center');
+
+    let x;
+    if (hAlign === 'left') x = margin;
+    else if (hAlign === 'right') x = imgWidth - margin - width;
+    else x = (imgWidth - width) / 2;
+
+    let y;
+    if (vAlign === 'top') y = bannerHeight + margin;
+    else if (vAlign === 'bottom') y = bannerHeight + imgHeight - margin - height;
+    else y = bannerHeight + (imgHeight - height) / 2;
+
+    return { text, x, y, width, height, fontSize, font };
+  }
+
+  function drawWatermark(imgWidth, imgHeight, bannerHeight) {
+    const layout = getWatermarkLayout(imgWidth, imgHeight, bannerHeight);
+    if (!layout) return;
+
+    ctx.save();
+    ctx.globalAlpha = watermark.opacity;
+    ctx.font = layout.font;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = watermark.color;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+    ctx.shadowBlur = Math.max(3, Math.round(layout.fontSize * 0.14));
+    ctx.shadowOffsetX = Math.max(1, Math.round(layout.fontSize * 0.03));
+    ctx.shadowOffsetY = Math.max(1, Math.round(layout.fontSize * 0.03));
+    ctx.fillText(layout.text, layout.x, layout.y);
+    ctx.restore();
   }
 
   function applyBeautifyPreset(presetId) {
