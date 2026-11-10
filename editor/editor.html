@@ -444,7 +444,17 @@
   <!-- Canvas Workspace Area -->
   <main class="editor-workspace" id="workspace">
     <div class="canvas-container" id="canvas-container">
-      <canvas id="screenshot-canvas"></canvas>
+      <div class="canvas-frame" id="canvas-frame">
+        <div class="frame-body" id="frame-body">
+          <div class="frame-chrome" id="frame-chrome" aria-hidden="true">
+            <span class="frame-dots"><i></i><i></i><i></i></span>
+            <span class="frame-address" id="frame-address"><span class="frame-address-text" id="frame-address-text"></span></span>
+          </div>
+          <div class="frame-notch" aria-hidden="true"></div>
+          <canvas id="screenshot-canvas"></canvas>
+          <div class="frame-home" aria-hidden="true"></div>
+        </div>
+      </div>
 
       <!-- Floating Crop Action Bar -->
       <div class="crop-floating-bar hidden" id="crop-floating-bar">
