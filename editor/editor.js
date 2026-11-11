@@ -84,6 +84,13 @@
   const watermarkPositionLabel = document.getElementById('watermark-position-label');
   const stickerPallet = document.getElementById('sticker-pallet');
   const stickerPalletBtns = document.querySelectorAll('.sticker-pallet-btn');
+  const canvasFrame = document.getElementById('canvas-frame');
+  const frameBody = document.getElementById('frame-body');
+  const frameAddress = document.getElementById('frame-address');
+  const frameAddressText = document.getElementById('frame-address-text');
+  const btnFrame = document.getElementById('btn-frame');
+  const framePanel = document.getElementById('frame-panel');
+  const framePresets = document.getElementById('frame-presets');
 
   // Drawing & State
   let currentTool = 'rectangle'; // 'select' | 'crop' | 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'step' | 'highlighter' | 'blur' | 'text'
@@ -162,6 +169,26 @@
   let watermark = { ...WATERMARK_DEFAULTS };
   let watermarkSaveTimer = null;
 
+  // Frame State
+  const FRAME_STORAGE_KEY = 'frameSettings';
+  const FRAME_TYPES = ['none', 'browser', 'browser-dark', 'phone'];
+  const FRAME_THEMES = {
+    browser: {
+      barBg: '#e5e7eb',
+      border: 'rgba(15, 23, 42, 0.16)',
+      pillBg: '#ffffff',
+      urlText: '#475569',
+    },
+    'browser-dark': {
+      barBg: '#1f2937',
+      border: 'rgba(255, 255, 255, 0.12)',
+      pillBg: '#0f172a',
+      urlText: '#cbd5e1',
+    },
+  };
+  let frame = { type: 'none' };
+  let frameSaveTimer = null;
+
   // Crop State
   let cropBox = null; // { x, y, w, h } in screenshot baseImage coordinates
   let cropDragMode = null; // 'draw' | 'move' | 'resize'
@@ -227,7 +254,12 @@
     setupEventListeners();
     setTool(currentTool);
     updateHistoryButtons();
-    await Promise.all([loadFilenameTemplate(), loadBeautifySettings(), loadWatermarkSettings()]);
+    await Promise.all([
+      loadFilenameTemplate(),
+      loadBeautifySettings(),
+      loadWatermarkSettings(),
+      loadFrameSettings(),
+    ]);
     updateStickerPalletSelection();
     await loadScreenshot();
     updateTemplatePreview();
@@ -2248,6 +2280,7 @@
         if (templatePanel.classList.contains('hidden')) {
           closeBeautifyPanel();
           closeFramePanel();
+          closeWatermarkPanel();
           openTemplatePanel();
         } else {
           closeTemplatePanel();
@@ -2289,6 +2322,7 @@
         if (beautifyPanel.classList.contains('hidden')) {
           closeTemplatePanel();
           closeWatermarkPanel();
+          closeFramePanel();
           openBeautifyPanel();
         } else {
           closeBeautifyPanel();
@@ -2353,6 +2387,7 @@
         if (framePanel.classList.contains('hidden')) {
           closeTemplatePanel();
           closeBeautifyPanel();
+          closeWatermarkPanel();
           openFramePanel();
         } else {
           closeFramePanel();
@@ -2393,6 +2428,7 @@
         if (watermarkPanel.classList.contains('hidden')) {
           closeTemplatePanel();
           closeBeautifyPanel();
+          closeFramePanel();
           openWatermarkPanel();
         } else {
           closeWatermarkPanel();
@@ -3330,6 +3366,13 @@
       return;
     }
 
+    // Escape closes the frame popover
+    if (e.key === 'Escape' && framePanel && !framePanel.classList.contains('hidden')) {
+      e.preventDefault();
+      closeFramePanel();
+      return;
+    }
+
     // If typing inside an input or textarea, do not intercept keystrokes
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
       return;
@@ -3872,6 +3915,7 @@
     if (watermarkPanel.classList.contains('hidden')) {
       closeTemplatePanel();
       closeBeautifyPanel();
+      closeFramePanel();
       openWatermarkPanel();
     } else {
       closeWatermarkPanel();
