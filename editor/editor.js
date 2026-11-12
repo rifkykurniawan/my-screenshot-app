@@ -66,13 +66,6 @@
   const beautifyRadius = document.getElementById('beautify-radius');
   const beautifyRadiusVal = document.getElementById('beautify-radius-val');
   const beautifyShadow = document.getElementById('beautify-shadow');
-  const btnFrame = document.getElementById('btn-frame');
-  const framePanel = document.getElementById('frame-panel');
-  const framePresets = document.getElementById('frame-presets');
-  const canvasFrame = document.getElementById('canvas-frame');
-  const frameBody = document.getElementById('frame-body');
-  const frameAddress = document.getElementById('frame-address');
-  const frameAddressText = document.getElementById('frame-address-text');
 
   // Drawing & State
   let currentTool = 'rectangle'; // 'select' | 'crop' | 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'step' | 'highlighter' | 'blur' | 'text'
@@ -130,27 +123,6 @@
   let beautify = { ...BEAUTIFY_DEFAULTS };
   let beautifySaveTimer = null;
 
-  // Frame State
-  const FRAME_STORAGE_KEY = 'frameSettings';
-  const FRAME_TYPES = ['none', 'browser', 'browser-dark', 'phone'];
-  const FRAME_THEMES = {
-    browser: {
-      barBg: '#eef1f5',
-      pillBg: '#ffffff',
-      pillText: '#475569',
-      urlText: '#0284c7',
-      border: 'rgba(15, 23, 42, 0.14)',
-    },
-    'browser-dark': {
-      barBg: '#1f2937',
-      pillBg: '#0f172a',
-      pillText: '#cbd5e1',
-      urlText: '#7dd3fc',
-      border: 'rgba(255, 255, 255, 0.14)',
-    },
-  };
-  let frame = { type: 'none' };
-  let frameSaveTimer = null;
 
   // Crop State
   let cropBox = null; // { x, y, w, h } in screenshot baseImage coordinates
@@ -217,7 +189,7 @@
     setupEventListeners();
     setTool(currentTool);
     updateHistoryButtons();
-    await Promise.all([loadFilenameTemplate(), loadBeautifySettings(), loadFrameSettings()]);
+    await Promise.all([loadFilenameTemplate(), loadBeautifySettings()]);
     await loadScreenshot();
     updateTemplatePreview();
   }
@@ -328,8 +300,6 @@
 
   // Calculate banner height proportionally based on width
   function getBannerHeight() {
-    // Browser frames own the URL chrome, so the in-image banner would duplicate it
-    if (isBrowserFrameActive()) return 0;
     if (!showUrlBar || !sourceUrl) return 0;
     const imgWidth = baseImage ? (baseImage.naturalWidth || baseImage.width) : 1280;
     return Math.max(40, Math.round(imgWidth * 0.025));
@@ -996,7 +966,6 @@
     if (canvas.style.width !== widthStr) canvas.style.width = widthStr;
     if (canvas.style.height !== heightStr) canvas.style.height = heightStr;
     applyBeautifyPreview();
-    applyFramePreview();
   }
 
   function updateZoomUI() {
@@ -1069,12 +1038,10 @@
 
     commitActiveText();
 
-    // Beautify padding and frame chrome are stored in image pixels, so include
-    // them in the fitted size.
+    // Beautify padding is stored in image pixels, so include it in the fitted size.
     const beautifyPad = getBeautifyPaddingPx();
-    const frameExtra = getFrameExtraSize(canvas.width, canvas.height);
-    const totalWidth = canvas.width + beautifyPad * 2 + frameExtra.width;
-    const totalHeight = canvas.height + beautifyPad * 2 + frameExtra.height;
+    const totalWidth = canvas.width + beautifyPad * 2;
+    const totalHeight = canvas.height + beautifyPad * 2;
     const fitScale = Math.min(availableWidth / totalWidth, availableHeight / totalHeight, 1);
     zoomLevel = clampZoom(fitScale);
     zoomMode = 'fit';
@@ -2188,7 +2155,6 @@
         e.stopPropagation();
         if (templatePanel.classList.contains('hidden')) {
           closeBeautifyPanel();
-          closeFramePanel();
           openTemplatePanel();
         } else {
           closeTemplatePanel();
@@ -2229,7 +2195,6 @@
         e.stopPropagation();
         if (beautifyPanel.classList.contains('hidden')) {
           closeTemplatePanel();
-          closeFramePanel();
           openBeautifyPanel();
         } else {
           closeBeautifyPanel();
@@ -2287,31 +2252,6 @@
     if (beautifyShadow) {
       beautifyShadow.addEventListener('change', () => setBeautifyOption({ shadow: beautifyShadow.checked }));
     }
-    // Frame popover
-    if (btnFrame && framePanel) {
-      btnFrame.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (framePanel.classList.contains('hidden')) {
-          closeTemplatePanel();
-          closeBeautifyPanel();
-          openFramePanel();
-        } else {
-          closeFramePanel();
-        }
-      });
-    }
-    if (framePresets) {
-      framePresets.addEventListener('click', (e) => {
-        const btn = e.target.closest('.frame-preset');
-        if (btn) setFrameType(btn.dataset.frame || 'none');
-      });
-    }
-    document.addEventListener('mousedown', (e) => {
-      if (!framePanel || framePanel.classList.contains('hidden')) return;
-      if (framePanel.contains(e.target)) return;
-      if (btnFrame && btnFrame.contains(e.target)) return;
-      closeFramePanel();
-    });
 
     document.addEventListener('mousedown', (e) => {
       if (!beautifyPanel || beautifyPanel.classList.contains('hidden')) return;
@@ -3135,12 +3075,7 @@
       return;
     }
 
-    // Escape closes the frame popover
-    if (e.key === 'Escape' && framePanel && !framePanel.classList.contains('hidden')) {
-      e.preventDefault();
-      closeFramePanel();
-      return;
-    }
+
 
     // If typing inside an input or textarea, do not intercept keystrokes
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
@@ -3621,411 +3556,6 @@
     if (btnBeautify) btnBeautify.setAttribute('aria-expanded', 'false');
   }
 
-  // Frames: mock browser / phone chrome wrapping the screenshot.
-  // Metrics are computed in image pixels so the live preview (scaled by zoom)
-  // and the exported composite stay in sync.
-  function normalizeFrameSettings(raw) {
-    const type = raw && typeof raw === 'object' && FRAME_TYPES.includes(raw.type) ? raw.type : 'none';
-    return { type };
-  }
-
-  function isBrowserFrameActive() {
-    return frame.type === 'browser' || frame.type === 'browser-dark';
-  }
-
-  function setFrameAddressText(text) {
-    const target = frameAddressText || frameAddress;
-    if (!target) return;
-    target.textContent = text;
-    // Clear any inline sizing left by older builds; truncation is CSS-driven now
-    if (frameAddressText) {
-      frameAddressText.style.fontSize = '';
-      frameAddressText.style.transform = '';
-    }
-  }
-
-  function syncUrlBarControl() {
-    if (!toggleUrlBar) return;
-    const locked = isBrowserFrameActive();
-    toggleUrlBar.disabled = locked;
-    const label = toggleUrlBar.closest('.toggle-control');
-    if (label) {
-      label.classList.toggle('disabled', locked);
-      label.title = locked
-        ? 'URL is shown inside the browser frame'
-        : 'Toggle URL bar at the top of the screenshot';
-    }
-  }
-
-  function getFrameMetrics(width, height) {
-    if (frame.type === 'none' || !width || !height) return null;
-
-    if (frame.type === 'phone') {
-      const bezel = Math.max(10, Math.round(width * 0.035));
-      const top = Math.max(bezel, Math.round(width * 0.05));
-      const bottom = Math.max(bezel, Math.round(width * 0.045));
-      const outerRadius = Math.max(
-        20,
-        Math.min(Math.round(Math.min(width, height) * 0.09), Math.round(width * 0.12))
-      );
-      return {
-        type: frame.type,
-        kind: 'phone',
-        left: bezel,
-        right: bezel,
-        top,
-        bottom,
-        radius: outerRadius,
-        innerRadius: Math.max(8, outerRadius - bezel),
-        margin: Math.max(8, Math.round(width * 0.02)),
-        notchWidth: Math.max(70, Math.round(width * 0.26)),
-        notchHeight: Math.max(10, Math.round(width * 0.026)),
-        homeWidth: Math.max(40, Math.round(width * 0.22)),
-        homeHeight: Math.max(3, Math.round(width * 0.005)),
-        homeOffset: Math.max(4, Math.round(width * 0.008)),
-        bg: '#0b0b0f',
-        border: 'rgba(255, 255, 255, 0.08)',
-      };
-    }
-
-    const theme = FRAME_THEMES[frame.type] || FRAME_THEMES.browser;
-    const barHeight = Math.max(32, Math.round(width * 0.05));
-    return {
-      type: frame.type,
-      kind: 'browser',
-      left: 0,
-      right: 0,
-      top: barHeight,
-      bottom: 0,
-      radius: Math.max(8, Math.min(Math.round(width * 0.014), Math.round(barHeight * 0.4))),
-      innerRadius: 0,
-      margin: Math.max(8, Math.round(width * 0.02)),
-      barHeight,
-      dotSize: Math.max(4, Math.round(barHeight * 0.1)),
-      dotGap: Math.max(4, Math.round(barHeight * 0.14)),
-      sidePad: Math.max(8, Math.round(barHeight * 0.32)),
-      pillHeight: Math.max(14, Math.round(barHeight * 0.56)),
-      pillFont: Math.max(7, Math.round(barHeight * 0.26)),
-      theme,
-    };
-  }
-
-  function getFrameExtraSize(width, height) {
-    const metrics = getFrameMetrics(width, height);
-    if (!metrics) return { width: 0, height: 0 };
-    return {
-      width: metrics.left + metrics.right + metrics.margin * 2,
-      height: metrics.top + metrics.bottom + metrics.margin * 2,
-    };
-  }
-
-  function applyFramePreview() {
-    if (!canvasContainer || !canvasFrame || !frameBody) return;
-
-    const metrics = getFrameMetrics(canvas.width, canvas.height);
-    const active = Boolean(metrics);
-    canvasContainer.classList.toggle('has-frame', active);
-    canvasFrame.classList.toggle('has-frame', active);
-    frameBody.classList.toggle('has-frame', active);
-    frameBody.classList.remove('frame-browser', 'frame-phone');
-
-    const scale = zoomLevel;
-    const px = (value) => `${Math.max(0, Math.round(value * scale))}px`;
-
-    if (!active) {
-      canvasFrame.style.removeProperty('--frame-margin');
-      ['--frame-radius', '--frame-inner-radius', '--frame-bg', '--frame-bar-h',
-        '--frame-bar-bg', '--frame-bar-border', '--frame-pill-bg', '--frame-pill-text',
-        '--frame-pill-h', '--frame-pill-font', '--frame-chrome-pad', '--frame-dot-size',
-        '--frame-dot-gap', '--frame-pad-top', '--frame-pad-right', '--frame-pad-bottom',
-        '--frame-pad-left', '--frame-notch-w', '--frame-notch-h', '--frame-home-w',
-        '--frame-home-h', '--frame-home-offset'].forEach((prop) => frameBody.style.removeProperty(prop));
-      setFrameAddressText('');
-      syncUrlBarControl();
-      return;
-    }
-
-    canvasFrame.style.setProperty('--frame-margin', px(metrics.margin));
-    frameBody.style.setProperty('--frame-radius', px(metrics.radius));
-    frameBody.style.setProperty('--frame-inner-radius', px(metrics.innerRadius));
-
-    if (metrics.kind === 'phone') {
-      frameBody.classList.add('frame-phone');
-      frameBody.style.setProperty('--frame-bg', metrics.bg);
-      frameBody.style.setProperty('--frame-pad-top', px(metrics.top));
-      frameBody.style.setProperty('--frame-pad-right', px(metrics.right));
-      frameBody.style.setProperty('--frame-pad-bottom', px(metrics.bottom));
-      frameBody.style.setProperty('--frame-pad-left', px(metrics.left));
-      frameBody.style.setProperty('--frame-notch-w', px(metrics.notchWidth));
-      frameBody.style.setProperty('--frame-notch-h', px(metrics.notchHeight));
-      frameBody.style.setProperty('--frame-home-w', px(metrics.homeWidth));
-      frameBody.style.setProperty('--frame-home-h', px(metrics.homeHeight));
-      frameBody.style.setProperty('--frame-home-offset', px(metrics.homeOffset));
-      setFrameAddressText('');
-      syncUrlBarControl();
-      return;
-    }
-
-    const { theme } = metrics;
-    frameBody.classList.add('frame-browser');
-    frameBody.style.setProperty('--frame-bg', theme.barBg);
-    frameBody.style.setProperty('--frame-bar-bg', theme.barBg);
-    frameBody.style.setProperty('--frame-bar-h', px(metrics.barHeight));
-    frameBody.style.setProperty('--frame-bar-border', theme.border);
-    frameBody.style.setProperty('--frame-pill-bg', theme.pillBg);
-    frameBody.style.setProperty('--frame-pill-text', theme.urlText);
-    frameBody.style.setProperty('--frame-pill-h', px(metrics.pillHeight));
-    frameBody.style.setProperty('--frame-pill-font', px(metrics.pillFont));
-    frameBody.style.setProperty('--frame-chrome-pad', px(metrics.sidePad));
-    frameBody.style.setProperty('--frame-dot-size', px(metrics.dotSize));
-    frameBody.style.setProperty('--frame-dot-gap', px(metrics.dotGap));
-    setFrameAddressText(sourceUrl || getDomainToken() || sourceTitle || '');
-    syncUrlBarControl();
-  }
-
-  function updateFrameControls() {
-    if (btnFrame) {
-      const active = frame.type !== 'none';
-      btnFrame.classList.toggle('active', active);
-      btnFrame.setAttribute('aria-pressed', active ? 'true' : 'false');
-    }
-    if (framePresets) {
-      framePresets.querySelectorAll('.frame-preset').forEach((btn) => {
-        btn.classList.toggle('active', btn.dataset.frame === frame.type);
-      });
-    }
-  }
-
-  function saveFrameSettings() {
-    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) return;
-    try {
-      const result = chrome.storage.local.set({ [FRAME_STORAGE_KEY]: frame });
-      if (result && typeof result.catch === 'function') result.catch(() => {});
-    } catch (err) {
-      console.error('Error saving frame settings:', err);
-    }
-  }
-
-  function scheduleFrameSave() {
-    if (frameSaveTimer) clearTimeout(frameSaveTimer);
-    frameSaveTimer = setTimeout(() => {
-      frameSaveTimer = null;
-      saveFrameSettings();
-    }, 350);
-  }
-
-  async function loadFrameSettings() {
-    let stored = null;
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-      try {
-        const data = await chrome.storage.local.get([FRAME_STORAGE_KEY]);
-        stored = data ? data[FRAME_STORAGE_KEY] : null;
-      } catch (err) {
-        stored = null;
-      }
-    }
-    frame = normalizeFrameSettings(stored);
-    updateFrameControls();
-    applyFramePreview();
-  }
-
-  function setFrameType(type) {
-    const next = FRAME_TYPES.includes(type) ? type : 'none';
-    commitActiveText();
-    frame = { ...frame, type: next };
-    updateFrameControls();
-    applyFramePreview();
-    // Browser frames hide the in-image URL banner, which changes canvas height
-    render();
-    if (zoomMode === 'fit') zoomToFit();
-    scheduleFrameSave();
-  }
-
-  function openFramePanel() {
-    if (!framePanel) return;
-    updateFrameControls();
-    framePanel.classList.remove('hidden');
-    if (btnFrame) btnFrame.setAttribute('aria-expanded', 'true');
-  }
-
-  function closeFramePanel() {
-    if (!framePanel) return;
-    framePanel.classList.add('hidden');
-    if (btnFrame) btnFrame.setAttribute('aria-expanded', 'false');
-  }
-
-  // Draws the screenshot inside a phone bezel with notch and home indicator
-  function drawPhoneFrame(targetCtx, metrics, ox, srcW, srcH) {
-    const contentW = srcW + metrics.left + metrics.right;
-    const contentH = srcH + metrics.top + metrics.bottom;
-
-    targetCtx.fillStyle = metrics.bg;
-    targetCtx.fillRect(ox, ox, contentW, contentH);
-
-    const sx = ox + metrics.left;
-    const sy = ox + metrics.top;
-
-    targetCtx.save();
-    roundRect(targetCtx, sx, sy, srcW, srcH, metrics.innerRadius);
-    targetCtx.clip();
-    targetCtx.drawImage(canvas, sx, sy);
-    targetCtx.restore();
-
-    roundRect(targetCtx, sx + 0.5, sy + 0.5, srcW - 1, srcH - 1, metrics.innerRadius);
-    targetCtx.strokeStyle = metrics.border;
-    targetCtx.lineWidth = 1;
-    targetCtx.stroke();
-
-    // Notch hanging from the top bezel
-    const notchX = ox + contentW / 2 - metrics.notchWidth / 2;
-    const notchRadius = metrics.notchHeight / 2;
-    targetCtx.beginPath();
-    targetCtx.moveTo(notchX, sy);
-    targetCtx.lineTo(notchX + metrics.notchWidth, sy);
-    targetCtx.lineTo(notchX + metrics.notchWidth, sy + metrics.notchHeight - notchRadius);
-    targetCtx.quadraticCurveTo(
-      notchX + metrics.notchWidth, sy + metrics.notchHeight,
-      notchX + metrics.notchWidth - notchRadius, sy + metrics.notchHeight
-    );
-    targetCtx.lineTo(notchX + notchRadius, sy + metrics.notchHeight);
-    targetCtx.quadraticCurveTo(notchX, sy + metrics.notchHeight, notchX, sy + metrics.notchHeight - notchRadius);
-    targetCtx.closePath();
-    targetCtx.fillStyle = metrics.bg;
-    targetCtx.fill();
-
-    // Home indicator
-    const homeX = ox + contentW / 2 - metrics.homeWidth / 2;
-    const homeY = sy + srcH - metrics.homeOffset - metrics.homeHeight;
-    targetCtx.fillStyle = 'rgba(203, 213, 225, 0.95)';
-    roundRect(targetCtx, homeX, homeY, metrics.homeWidth, metrics.homeHeight, metrics.homeHeight / 2);
-    targetCtx.fill();
-  }
-
-  // Draws the screenshot under a browser title bar with traffic lights and an URL pill
-  function drawBrowserFrame(targetCtx, metrics, ox, srcW, srcH) {
-    const contentW = srcW + metrics.left + metrics.right;
-    const { theme } = metrics;
-
-    targetCtx.fillStyle = theme.barBg;
-    targetCtx.fillRect(ox, ox, contentW, metrics.barHeight);
-
-    targetCtx.drawImage(canvas, ox + metrics.left, ox + metrics.barHeight, srcW, srcH);
-
-    targetCtx.fillStyle = theme.border;
-    targetCtx.fillRect(ox, ox + metrics.barHeight - 1, contentW, 1);
-
-    const dotY = ox + metrics.barHeight / 2;
-    const dotX = ox + metrics.sidePad;
-    const dotColors = ['#ff5f57', '#febc2e', '#28c840'];
-    for (let i = 0; i < dotColors.length; i += 1) {
-      targetCtx.beginPath();
-      targetCtx.fillStyle = dotColors[i];
-      targetCtx.arc(dotX + i * (metrics.dotSize + metrics.dotGap), dotY, metrics.dotSize / 2, 0, Math.PI * 2);
-      targetCtx.fill();
-    }
-
-    const dotsEnd = dotX + metrics.dotSize * 3 + metrics.dotGap * 2;
-    const pillRight = ox + contentW - metrics.sidePad;
-    const pillWidth = Math.max(40, Math.min(
-      Math.round(contentW * 0.72),
-      pillRight - (dotsEnd + metrics.sidePad)
-    ));
-    const pillX = ox + (contentW - pillWidth) / 2;
-    const pillY = ox + (metrics.barHeight - metrics.pillHeight) / 2;
-
-    targetCtx.fillStyle = theme.pillBg;
-    roundRect(targetCtx, pillX, pillY, pillWidth, metrics.pillHeight, metrics.pillHeight / 2);
-    targetCtx.fill();
-    targetCtx.strokeStyle = theme.border;
-    targetCtx.lineWidth = 1;
-    targetCtx.stroke();
-
-    const urlText = sourceUrl || getDomainToken() || sourceTitle || '';
-    if (urlText) {
-      targetCtx.save();
-      targetCtx.beginPath();
-      roundRect(targetCtx, pillX, pillY, pillWidth, metrics.pillHeight, metrics.pillHeight / 2);
-      targetCtx.clip();
-      targetCtx.fillStyle = theme.urlText;
-      targetCtx.textAlign = 'center';
-      targetCtx.textBaseline = 'middle';
-
-      targetCtx.font = `600 ${metrics.pillFont}px system-ui, -apple-system, sans-serif`;
-      const maxTextWidth = Math.max(1, pillWidth - 16);
-
-      // Keep the base font size and truncate with an end ellipsis when the URL
-      // does not fit the pill.
-      let displayText = urlText;
-      if (targetCtx.measureText(displayText).width > maxTextWidth) {
-        let low = 0;
-        let high = displayText.length;
-        while (low < high) {
-          const mid = Math.ceil((low + high) / 2);
-          if (targetCtx.measureText(`${displayText.slice(0, mid)}…`).width <= maxTextWidth) {
-            low = mid;
-          } else {
-            high = mid - 1;
-          }
-        }
-        displayText = `${displayText.slice(0, low)}…`;
-      }
-      targetCtx.fillText(displayText, pillX + pillWidth / 2, pillY + metrics.pillHeight / 2);
-      targetCtx.restore();
-    }
-  }
-
-  // Wraps the editing canvas in the selected frame mockup. Returns the original
-  // canvas untouched when no frame is active.
-  function createFramedCanvas() {
-    const metrics = getFrameMetrics(canvas.width, canvas.height);
-    if (!metrics) return { canvas, radius: 0, framed: false };
-
-    const srcW = canvas.width;
-    const srcH = canvas.height;
-    const { margin } = metrics;
-    const contentW = srcW + metrics.left + metrics.right;
-    const contentH = srcH + metrics.top + metrics.bottom;
-
-    const out = document.createElement('canvas');
-    out.width = contentW + margin * 2;
-    out.height = contentH + margin * 2;
-    const outCtx = out.getContext('2d');
-
-    // Soft shadow behind the frame silhouette. Beautify already draws its own
-    // shadow in that mode, so avoid doubling it.
-    if (!beautify.enabled) {
-      outCtx.save();
-      const blur = Math.max(10, Math.round(Math.min(contentW, contentH) * 0.03));
-      outCtx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-      outCtx.shadowBlur = blur;
-      outCtx.shadowOffsetY = Math.round(blur * 0.45);
-      outCtx.fillStyle = '#000000';
-      roundRect(outCtx, margin, margin, contentW, contentH, metrics.radius);
-      outCtx.fill();
-      outCtx.restore();
-    }
-
-    outCtx.save();
-    roundRect(outCtx, margin, margin, contentW, contentH, metrics.radius);
-    outCtx.clip();
-    if (metrics.kind === 'phone') {
-      drawPhoneFrame(outCtx, metrics, margin, srcW, srcH);
-    } else {
-      drawBrowserFrame(outCtx, metrics, margin, srcW, srcH);
-    }
-    outCtx.restore();
-
-    // Hairline edge so light frames stay readable on light backgrounds
-    if (metrics.border) {
-      roundRect(outCtx, margin + 0.5, margin + 0.5, contentW - 1, contentH - 1, metrics.radius);
-      outCtx.strokeStyle = metrics.border;
-      outCtx.lineWidth = 1;
-      outCtx.stroke();
-    }
-
-    return { canvas: out, radius: Math.min(metrics.radius, Math.floor(Math.min(out.width, out.height) / 2)), framed: true };
-  }
-
   // Builds a CSS-compatible linear gradient direction from an angle in degrees
   function createBeautifyGradient(targetCtx, width, height) {
     const rad = (beautify.angle * Math.PI) / 180;
@@ -4048,8 +3578,7 @@
   // Composites the editor canvas onto a padded, styled output canvas.
   // The editing canvas is never modified, so annotation coordinates stay valid.
   function createBeautifiedCanvas() {
-    const framed = createFramedCanvas();
-    const source = framed.canvas;
+    const source = canvas;
 
     if (!beautify.enabled) return source;
 
@@ -4066,10 +3595,7 @@
       : createBeautifyGradient(outCtx, out.width, out.height);
     outCtx.fillRect(0, 0, out.width, out.height);
 
-    // A frame already owns the outer silhouette, so its radius replaces the
-    // beautify corner radius instead of clipping the mockup.
-    const requestedRadius = framed.framed ? framed.radius : Math.round(beautify.radius);
-    const radius = Math.min(requestedRadius, Math.floor(Math.min(sourceWidth, sourceHeight) / 2));
+    const radius = Math.min(Math.round(beautify.radius), Math.floor(Math.min(sourceWidth, sourceHeight) / 2));
 
     if (beautify.shadow) {
       outCtx.save();

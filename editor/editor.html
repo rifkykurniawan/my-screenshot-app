@@ -359,39 +359,7 @@
           </div>
         </div>
       </div>
-      <div class="frame-control">
-        <button type="button" id="btn-frame" class="btn-icon frame-toggle-btn" title="Frame (browser &amp; phone mockups)" aria-haspopup="dialog" aria-expanded="false" aria-controls="frame-panel">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-            <path d="M2 9h20"></path>
-            <circle cx="6" cy="6.5" r="0.6" fill="currentColor"></circle>
-            <circle cx="9" cy="6.5" r="0.6" fill="currentColor"></circle>
-          </svg>
-        </button>
-        <div class="frame-panel hidden" id="frame-panel" role="dialog" aria-label="Frame settings">
-          <div class="beautify-header">
-            <span class="beautify-title">Frame</span>
-          </div>
-          <div class="frame-presets" id="frame-presets" role="group" aria-label="Frame styles">
-            <button type="button" class="frame-preset" data-frame="none" title="No frame">
-              <span class="frame-swatch frame-swatch-none"></span>
-              <span>Off</span>
-            </button>
-            <button type="button" class="frame-preset" data-frame="browser" title="Light browser window">
-              <span class="frame-swatch frame-swatch-browser"></span>
-              <span>Browser</span>
-            </button>
-            <button type="button" class="frame-preset" data-frame="browser-dark" title="Dark browser window">
-              <span class="frame-swatch frame-swatch-browser-dark"></span>
-              <span>Dark</span>
-            </button>
-            <button type="button" class="frame-preset" data-frame="phone" title="Phone mockup">
-              <span class="frame-swatch frame-swatch-phone"></span>
-              <span>Phone</span>
-            </button>
-          </div>
-        </div>
-      </div>
+
       <button id="btn-save" class="btn-secondary" title="Save screenshot (Ctrl+S)">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -415,17 +383,7 @@
   <!-- Canvas Workspace Area -->
   <main class="editor-workspace" id="workspace">
     <div class="canvas-container" id="canvas-container">
-      <div class="canvas-frame" id="canvas-frame">
-        <div class="frame-body" id="frame-body">
-          <div class="frame-chrome" id="frame-chrome" aria-hidden="true">
-            <span class="frame-dots"><i></i><i></i><i></i></span>
-            <span class="frame-address" id="frame-address"><span class="frame-address-text" id="frame-address-text"></span></span>
-          </div>
-          <div class="frame-notch" aria-hidden="true"></div>
-          <canvas id="screenshot-canvas"></canvas>
-          <div class="frame-home" aria-hidden="true"></div>
-        </div>
-      </div>
+      <canvas id="screenshot-canvas"></canvas>
 
       <!-- Floating Crop Action Bar -->
       <div class="crop-floating-bar hidden" id="crop-floating-bar">
