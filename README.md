@@ -120,6 +120,8 @@ The default template is `screen-snap_{date}_{time}`, and the format's extension 
 | `H` | Select Highlighter tool (Hold `Shift` to snap straight horizontal highlight) |
 | `B` | Select Blur / Redact tool (Hold `Shift` to constrain to square region) |
 | `T` | Select Text tool (Double-click existing text in Select mode to edit) |
+| `S` | Select Sticker tool (Pick an emoji, then click to stamp) |
+| `W` | Toggle the Watermark panel |
 | `Delete` or `Backspace` | Delete selected annotation |
 | `Arrow Keys` *(+ Shift for 10px)* | Nudge selected annotation |
 | `Enter` *(while typing text)* | Commit text annotation |

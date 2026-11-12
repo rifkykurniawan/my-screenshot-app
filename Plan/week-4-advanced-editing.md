@@ -19,8 +19,8 @@ Main files: `editor/editor.js`, `editor/editor.html`, `editor/editor.css`.
 - **Done when:** frames wrap the screenshot cleanly.
 
 ## Day 24: Stickers and watermark
-- [ ] Add an emoji/sticker stamp tool
-- [ ] Add an image/text watermark with position and opacity
+- [x] Add an emoji/sticker stamp tool
+- [x] Add a text watermark with position and opacity
 - **Done when:** both render in the export.
 
 ## Day 25: Text styles
