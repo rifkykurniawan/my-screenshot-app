@@ -869,22 +869,13 @@ body {
   flex-shrink: 0;
 }
 
-.beautify-toggle-btn.active,
-.frame-toggle-btn.active {
+.beautify-toggle-btn.active {
   color: #38bdf8;
   background: rgba(56, 189, 248, 0.16);
   border-color: rgba(56, 189, 248, 0.4);
 }
 
-.frame-control {
-  position: relative;
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.beautify-panel,
-.frame-panel {
+.beautify-panel {
   position: absolute;
   top: calc(100% + 12px);
   right: 0;
@@ -900,15 +891,8 @@ body {
   z-index: 80;
 }
 
-.beautify-panel.hidden,
-.frame-panel.hidden {
+.beautify-panel.hidden {
   display: none;
-}
-
-.frame-presets {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 5px;
 }
 
 .beautify-header {
@@ -970,8 +954,7 @@ body {
   gap: 5px;
 }
 
-.beautify-preset,
-.frame-preset {
+.beautify-preset {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -988,49 +971,22 @@ body {
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
-.beautify-preset:hover,
-.frame-preset:hover {
+.beautify-preset:hover {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-main);
 }
 
-.beautify-preset.active,
-.frame-preset.active {
+.beautify-preset.active {
   border-color: rgba(56, 189, 248, 0.6);
   background: rgba(56, 189, 248, 0.12);
   color: #e2e8f0;
 }
 
-.beautify-preset-swatch,
-.frame-swatch {
+.beautify-preset-swatch {
   width: 100%;
   height: 18px;
   border-radius: 4px;
   border: 1px solid rgba(255, 255, 255, 0.14);
-}
-
-.frame-swatch-browser {
-  background: linear-gradient(#e5e7eb 0 35%, #ffffff 35% 100%);
-}
-
-.frame-swatch-browser-dark {
-  background: linear-gradient(#1f2937 0 35%, #0f172a 35% 100%);
-}
-
-.frame-swatch-phone {
-  background: #0b0b0f;
-  box-shadow: inset 0 0 0 3px #0b0b0f, inset 0 0 0 5px #334155;
-}
-
-.frame-swatch-none {
-  background-image: repeating-linear-gradient(
-    45deg,
-    rgba(148, 163, 184, 0.45) 0,
-    rgba(148, 163, 184, 0.45) 3px,
-    transparent 3px,
-    transparent 7px
-  );
-  background-color: rgba(255, 255, 255, 0.04);
 }
 
 .beautify-swatch-none {
@@ -1429,157 +1385,6 @@ body {
   line-height: 0;
 }
 
-/* Frame live preview: padding reserves the mock chrome, while absolute overlays
-   draw it. The canvas stays the only drawing surface, so coordinates are safe. */
-.canvas-container.has-frame {
-  overflow: visible;
-  background: transparent;
-  box-shadow: none;
-  border-radius: 0;
-}
-
-.canvas-frame {
-  position: relative;
-  display: inline-block;
-  line-height: 0;
-  padding: var(--frame-margin, 0px);
-}
-
-.canvas-frame.has-frame {
-  box-shadow: 0 24px 50px -16px rgba(0, 0, 0, 0.65);
-}
-
-.canvas-container.beautify-preview .canvas-frame.has-frame {
-  box-shadow: none;
-}
-
-.frame-body {
-  position: relative;
-  line-height: 0;
-}
-
-.frame-body.has-frame {
-  overflow: hidden;
-  background: var(--frame-bg, #0b0b0f);
-  border-radius: var(--frame-radius, 0px);
-}
-
-.frame-body.frame-phone {
-  padding: var(--frame-pad-top, 0px) var(--frame-pad-right, 0px) var(--frame-pad-bottom, 0px) var(--frame-pad-left, 0px);
-}
-
-.frame-body.frame-browser {
-  padding-top: var(--frame-bar-h, 0px);
-}
-
-.frame-chrome,
-.frame-notch,
-.frame-home {
-  pointer-events: none;
-}
-
-.frame-chrome {
-  display: none;
-}
-
-.frame-body.frame-browser .frame-chrome {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: var(--frame-dot-gap, 4px);
-  height: var(--frame-bar-h, 0px);
-  padding: 0 var(--frame-chrome-pad, 8px);
-  background: var(--frame-bar-bg, #eef1f5);
-  border-bottom: 1px solid var(--frame-bar-border, rgba(15, 23, 42, 0.14));
-  line-height: 0;
-}
-
-.frame-dots {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--frame-dot-gap, 4px);
-  flex: 0 0 auto;
-}
-
-.frame-dots i {
-  width: var(--frame-dot-size, 5px);
-  height: var(--frame-dot-size, 5px);
-  border-radius: 50%;
-  background: #ff5f57;
-}
-
-.frame-dots i:nth-child(2) {
-  background: #febc2e;
-}
-
-.frame-dots i:nth-child(3) {
-  background: #28c840;
-}
-
-.frame-address {
-  flex: 0 1 72%;
-  margin: 0 auto;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: var(--frame-pill-h, 18px);
-  padding: 0 8px;
-  background: var(--frame-pill-bg, #ffffff);
-  color: var(--frame-pill-text, #0284c7);
-  font-family: system-ui, -apple-system, sans-serif;
-  font-size: var(--frame-pill-font, 11px);
-  font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  border-radius: 999px;
-}
-
-.frame-address-text {
-  display: block;
-  width: 100%;
-  overflow: hidden;
-  text-align: center;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.frame-notch,
-.frame-home {
-  display: none;
-}
-
-.frame-body.frame-phone .frame-notch {
-  position: absolute;
-  top: var(--frame-pad-top, 0px);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2;
-  display: block;
-  width: var(--frame-notch-w, 0px);
-  height: var(--frame-notch-h, 0px);
-  background: var(--frame-bg, #0b0b0f);
-  border-radius: 0 0 999px 999px;
-}
-
-.frame-body.frame-phone .frame-home {
-  position: absolute;
-  left: 50%;
-  bottom: calc(var(--frame-pad-bottom, 0px) + var(--frame-home-offset, 6px));
-  transform: translateX(-50%);
-  z-index: 2;
-  display: block;
-  width: var(--frame-home-w, 0px);
-  height: var(--frame-home-h, 0px);
-  border-radius: 999px;
-  background: rgba(203, 213, 225, 0.95);
-}
-
 /* Beautify live preview: padding/background live on the container, the rounded
    corner + shadow live on the canvas so annotation pixels stay untouched. */
 .canvas-container.beautify-preview {
@@ -1593,12 +1398,6 @@ body {
 .canvas-container.beautify-preview #screenshot-canvas {
   border-radius: var(--beauty-radius, 0px);
   box-shadow: var(--beauty-shadow, none);
-}
-
-/* A frame owns the outer silhouette and shadow, so it overrides beautify corners */
-.canvas-container.has-frame #screenshot-canvas {
-  border-radius: var(--frame-inner-radius, 0px);
-  box-shadow: none;
 }
 
 .editor-workspace.panning,
