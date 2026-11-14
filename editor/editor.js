@@ -5,6 +5,7 @@
   const workspace = document.getElementById('workspace');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   const dimensionsBadge = document.getElementById('image-dimensions');
+  const contextToolName = document.getElementById('context-tool-name');
   const toast = document.getElementById('toast');
   const toastTitle = document.getElementById('toast-title');
   const toastDesc = document.getElementById('toast-desc');
@@ -41,8 +42,8 @@
   const qualityControl = document.getElementById('quality-control');
   const qualitySlider = document.getElementById('quality-slider');
   const qualityVal = document.getElementById('quality-val');
-  const btnFilenameTemplate = document.getElementById('btn-filename-template');
-  const templatePanel = document.getElementById('filename-template-panel');
+  const btnExportSettings = document.getElementById('btn-export-settings');
+  const exportSettingsPanel = document.getElementById('export-settings-panel');
   const templateInput = document.getElementById('filename-template');
   const templateTokens = document.getElementById('template-tokens');
   const templatePreview = document.getElementById('template-preview');
@@ -52,8 +53,6 @@
   const zoomLevelLabel = document.getElementById('zoom-level');
   const btnZoomFit = document.getElementById('btn-zoom-fit');
   const btnZoomActual = document.getElementById('btn-zoom-actual');
-  const btnBeautify = document.getElementById('btn-beautify');
-  const beautifyPanel = document.getElementById('beautify-panel');
   const beautifyEnable = document.getElementById('beautify-enabled');
   const beautifyPresets = document.getElementById('beautify-presets');
   const beautifyBody = document.getElementById('beautify-body');
@@ -67,8 +66,44 @@
   const beautifyRadiusVal = document.getElementById('beautify-radius-val');
   const beautifyShadow = document.getElementById('beautify-shadow');
 
+  // Sticker elements
+  const stickerPallet = document.getElementById('sticker-pallet');
+  const stickerPalletBtns = document.querySelectorAll('.sticker-pallet-btn');
+
+  // Watermark elements (popover UI is not mounted yet, so these resolve to null)
+  const btnWatermark = document.getElementById('btn-watermark');
+  const watermarkPanel = document.getElementById('watermark-panel');
+  const watermarkEnable = document.getElementById('watermark-enabled');
+  const watermarkBody = document.getElementById('watermark-body');
+  const watermarkText = document.getElementById('watermark-text');
+  const watermarkColor = document.getElementById('watermark-color');
+  const watermarkOpacity = document.getElementById('watermark-opacity');
+  const watermarkOpacityVal = document.getElementById('watermark-opacity-val');
+  const watermarkSize = document.getElementById('watermark-size');
+  const watermarkSizeVal = document.getElementById('watermark-size-val');
+  const watermarkTile = document.getElementById('watermark-tile');
+  const watermarkAngle = document.getElementById('watermark-angle');
+  const watermarkAngleVal = document.getElementById('watermark-angle-val');
+  const watermarkAngleRow = document.getElementById('watermark-angle-row');
+  const watermarkPositionLabel = document.getElementById('watermark-position-label');
+  const watermarkPositionGrid = document.getElementById('watermark-position-grid');
+
   // Drawing & State
-  let currentTool = 'rectangle'; // 'select' | 'crop' | 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'step' | 'highlighter' | 'blur' | 'text'
+  const TOOL_LABELS = {
+    select: 'Select',
+    crop: 'Crop',
+    eraser: 'Eraser',
+    rectangle: 'Rectangle',
+    ellipse: 'Ellipse',
+    line: 'Line',
+    arrow: 'Arrow',
+    step: 'Step',
+    highlighter: 'Highlighter',
+    blur: 'Blur',
+    text: 'Text',
+    sticker: 'Sticker',
+  };
+  let currentTool = 'rectangle'; // 'select' | 'crop' | 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'step' | 'highlighter' | 'blur' | 'text' | 'sticker'
   let previousTool = 'rectangle';
   let currentColor = '#ef4444'; // Crimson Red default
   let currentStroke = 4;        // 4px default
@@ -123,6 +158,26 @@
   };
   let beautify = { ...BEAUTIFY_DEFAULTS };
   let beautifySaveTimer = null;
+
+  // Watermark State
+  const WATERMARK_STORAGE_KEY = 'watermarkSettings';
+  const WATERMARK_DEFAULTS = {
+    enabled: false,
+    text: '',
+    color: '#ffffff',
+    opacity: 0.45,
+    size: 12,
+    position: 'bottom-right',
+    tile: false,
+    angle: 0,
+  };
+  const WATERMARK_POSITIONS = [
+    'top-left', 'top-center', 'top-right',
+    'middle-left', 'middle-center', 'middle-right',
+    'bottom-left', 'bottom-center', 'bottom-right',
+  ];
+  let watermark = { ...WATERMARK_DEFAULTS };
+  let watermarkSaveTimer = null;
 
 
   // Crop State
@@ -187,6 +242,15 @@
   init();
 
   async function init() {
+    document.querySelectorAll('.app-header svg').forEach((svg) => {
+      svg.setAttribute('aria-hidden', 'true');
+    });
+    colorBtns.forEach((btn) => {
+      btn.setAttribute('aria-pressed', btn.classList.contains('active') ? 'true' : 'false');
+    });
+    strokeBtns.forEach((btn) => {
+      btn.setAttribute('aria-pressed', btn.classList.contains('active') ? 'true' : 'false');
+    });
     setupEventListeners();
     setTool(currentTool);
     updateHistoryButtons();
@@ -1443,6 +1507,7 @@
       colorBtns.forEach(b => {
         const matches = b.dataset.color.toLowerCase() === currentColor.toLowerCase();
         b.classList.toggle('active', matches);
+        b.setAttribute('aria-pressed', matches ? 'true' : 'false');
         if (matches) matched = true;
       });
       if (customColorPicker) {
@@ -1453,7 +1518,9 @@
     if (shape.stroke) {
       currentStroke = shape.stroke;
       strokeBtns.forEach(b => {
-        b.classList.toggle('active', parseInt(b.dataset.stroke, 10) === currentStroke);
+        const matches = parseInt(b.dataset.stroke, 10) === currentStroke;
+        b.classList.toggle('active', matches);
+        b.setAttribute('aria-pressed', matches ? 'true' : 'false');
       });
     }
 
@@ -2023,8 +2090,12 @@
         if (activeTextInput) e.preventDefault();
       });
       btn.addEventListener('click', () => {
-        colorBtns.forEach(b => b.classList.remove('active'));
+        colorBtns.forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
         btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
         currentColor = btn.dataset.color;
         if (activeTextInput) {
           activeTextInput.color = currentColor;
@@ -2044,7 +2115,10 @@
 
     // Custom color picker
     customColorPicker.addEventListener('input', (e) => {
-      colorBtns.forEach(b => b.classList.remove('active'));
+      colorBtns.forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed', 'false');
+      });
       currentColor = e.target.value;
       if (activeTextInput) {
         activeTextInput.color = currentColor;
@@ -2067,8 +2141,12 @@
         if (activeTextInput) e.preventDefault();
       });
       btn.addEventListener('click', () => {
-        strokeBtns.forEach(b => b.classList.remove('active'));
+        strokeBtns.forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
         btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
         currentStroke = parseInt(btn.dataset.stroke, 10);
         if (activeTextInput) {
           activeTextInput.baseFontSize = getBaseFontSize(currentStroke);
@@ -2198,18 +2276,7 @@
     }
     updateExportControls();
 
-    // Filename template popover
-    if (btnFilenameTemplate && templatePanel) {
-      btnFilenameTemplate.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (templatePanel.classList.contains('hidden')) {
-          closeBeautifyPanel();
-          openTemplatePanel();
-        } else {
-          closeTemplatePanel();
-        }
-      });
-    }
+
     if (templateInput) {
       templateInput.addEventListener('input', () => {
         filenameTemplate = templateInput.value;
@@ -2238,18 +2305,7 @@
       });
     }
 
-    // Beautify popover
-    if (btnBeautify && beautifyPanel) {
-      btnBeautify.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (beautifyPanel.classList.contains('hidden')) {
-          closeTemplatePanel();
-          openBeautifyPanel();
-        } else {
-          closeBeautifyPanel();
-        }
-      });
-    }
+
     if (beautifyEnable) {
       beautifyEnable.addEventListener('change', () => {
         if (beautifyEnable.checked) {
@@ -2302,18 +2358,23 @@
       beautifyShadow.addEventListener('change', () => setBeautifyOption({ shadow: beautifyShadow.checked }));
     }
 
-    document.addEventListener('mousedown', (e) => {
-      if (!beautifyPanel || beautifyPanel.classList.contains('hidden')) return;
-      if (beautifyPanel.contains(e.target)) return;
-      if (btnBeautify && btnBeautify.contains(e.target)) return;
-      closeBeautifyPanel();
-    });
+    // Export settings popover
+    if (btnExportSettings && exportSettingsPanel) {
+      btnExportSettings.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (exportSettingsPanel.classList.contains('hidden')) {
+          openExportSettingsPanel();
+        } else {
+          closeExportSettingsPanel();
+        }
+      });
+    }
 
     document.addEventListener('mousedown', (e) => {
-      if (!templatePanel || templatePanel.classList.contains('hidden')) return;
-      if (templatePanel.contains(e.target)) return;
-      if (btnFilenameTemplate && btnFilenameTemplate.contains(e.target)) return;
-      closeTemplatePanel();
+      if (!exportSettingsPanel || exportSettingsPanel.classList.contains('hidden')) return;
+      if (exportSettingsPanel.contains(e.target)) return;
+      if (btnExportSettings && btnExportSettings.contains(e.target)) return;
+      closeExportSettingsPanel();
     });
 
     // Watermark popover
@@ -2321,9 +2382,7 @@
       btnWatermark.addEventListener('click', (e) => {
         e.stopPropagation();
         if (watermarkPanel.classList.contains('hidden')) {
-          closeTemplatePanel();
-          closeBeautifyPanel();
-          closeFramePanel();
+          closeExportSettingsPanel();
           openWatermarkPanel();
         } else {
           closeWatermarkPanel();
@@ -2461,8 +2520,11 @@
 
     currentTool = tool;
     toolBtns.forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.tool === tool);
+      const isActive = btn.dataset.tool === tool;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     });
+    if (contextToolName) contextToolName.textContent = TOOL_LABELS[tool] || 'Tool';
     canvas.classList.toggle('tool-select', tool === 'select');
     canvas.classList.toggle('tool-crop', tool === 'crop');
     canvas.classList.toggle('tool-eraser', tool === 'eraser');
@@ -2509,8 +2571,12 @@
     if (tool === 'highlighter' && currentColor === '#ef4444') {
       const yellowBtn = document.querySelector('.color-btn[data-color="#eab308"]');
       if (yellowBtn) {
-        colorBtns.forEach(b => b.classList.remove('active'));
+        colorBtns.forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
         yellowBtn.classList.add('active');
+        yellowBtn.setAttribute('aria-pressed', 'true');
         currentColor = '#eab308';
       }
     }
@@ -3239,18 +3305,11 @@
       return;
     }
 
-    // Escape closes the filename template popover
-    if (e.key === 'Escape' && templatePanel && !templatePanel.classList.contains('hidden')) {
+    // Escape closes the export settings popover
+    if (e.key === 'Escape' && exportSettingsPanel && !exportSettingsPanel.classList.contains('hidden')) {
       e.preventDefault();
-      closeTemplatePanel();
+      closeExportSettingsPanel();
       if (templateInput) templateInput.blur();
-      return;
-    }
-
-    // Escape closes the beautify popover
-    if (e.key === 'Escape' && beautifyPanel && !beautifyPanel.classList.contains('hidden')) {
-      e.preventDefault();
-      closeBeautifyPanel();
       return;
     }
 
@@ -3647,10 +3706,6 @@
   function updateBeautifyControls() {
     if (beautifyEnable) beautifyEnable.checked = beautify.enabled;
     if (beautifyBody) beautifyBody.classList.toggle('disabled', !beautify.enabled);
-    if (btnBeautify) {
-      btnBeautify.classList.toggle('active', beautify.enabled);
-      btnBeautify.setAttribute('aria-pressed', beautify.enabled ? 'true' : 'false');
-    }
 
     if (beautifyPresets) {
       beautifyPresets.querySelectorAll('.beautify-preset').forEach(btn => {
@@ -3796,9 +3851,7 @@
   function toggleWatermarkPanel() {
     if (!watermarkPanel) return;
     if (watermarkPanel.classList.contains('hidden')) {
-      closeTemplatePanel();
-      closeBeautifyPanel();
-      closeFramePanel();
+      closeExportSettingsPanel();
       openWatermarkPanel();
     } else {
       closeWatermarkPanel();
@@ -3919,17 +3972,18 @@
     scheduleBeautifySave();
   }
 
-  function openBeautifyPanel() {
-    if (!beautifyPanel) return;
+  function openExportSettingsPanel() {
+    if (!exportSettingsPanel) return;
     updateBeautifyControls();
-    beautifyPanel.classList.remove('hidden');
-    if (btnBeautify) btnBeautify.setAttribute('aria-expanded', 'true');
+    updateTemplatePreview();
+    exportSettingsPanel.classList.remove('hidden');
+    if (btnExportSettings) btnExportSettings.setAttribute('aria-expanded', 'true');
   }
 
-  function closeBeautifyPanel() {
-    if (!beautifyPanel) return;
-    beautifyPanel.classList.add('hidden');
-    if (btnBeautify) btnBeautify.setAttribute('aria-expanded', 'false');
+  function closeExportSettingsPanel() {
+    if (!exportSettingsPanel) return;
+    exportSettingsPanel.classList.add('hidden');
+    if (btnExportSettings) btnExportSettings.setAttribute('aria-expanded', 'false');
   }
 
   // Builds a CSS-compatible linear gradient direction from an angle in degrees
@@ -3993,22 +4047,7 @@
     return out;
   }
 
-  function openTemplatePanel() {
-    if (!templatePanel) return;
-    updateTemplatePreview();
-    templatePanel.classList.remove('hidden');
-    if (btnFilenameTemplate) btnFilenameTemplate.setAttribute('aria-expanded', 'true');
-    if (templateInput) {
-      templateInput.focus();
-      templateInput.select();
-    }
-  }
 
-  function closeTemplatePanel() {
-    if (!templatePanel) return;
-    templatePanel.classList.add('hidden');
-    if (btnFilenameTemplate) btnFilenameTemplate.setAttribute('aria-expanded', 'false');
-  }
 
   function insertTemplateToken(token) {
     if (!templateInput || !token) return;
