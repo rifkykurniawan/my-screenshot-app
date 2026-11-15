@@ -12,379 +12,395 @@
 <body>
   <!-- Header / Top Bar -->
   <header class="app-header">
-    <div class="brand">
-      <div class="brand-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <circle cx="8.5" cy="8.5" r="1.5"></circle>
-          <polyline points="21 15 16 10 5 21"></polyline>
-        </svg>
+    <div class="topbar-primary">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+        </div>
+        <h1 class="brand-title">Screen Snap</h1>
+        <span id="image-dimensions" class="badge-dimension">Loading...</span>
       </div>
-      <span class="brand-title">Screen Snap</span>
-      <span id="image-dimensions" class="badge-dimension">Loading...</span>
+
+      <!-- Tool rail: grouped by intent, not by icon shape -->
+      <div class="toolbar" role="group" aria-label="Annotation tools">
+        <div class="tool-selector" role="group" aria-label="Selection tools">
+          <button class="tool-btn" data-tool="select" title="Select Tool (V)" aria-label="Select tool">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m3 3 7 18 3-7 7-3L3 3z"></path>
+              <path d="m13 13 6 6"></path>
+            </svg>
+          </button>
+          <button class="tool-btn" data-tool="crop" title="Crop Tool (C) - Select area to crop" aria-label="Crop tool">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2v14a2 2 0 0 0 2 2h14"></path>
+              <path d="M18 22V8a2 2 0 0 0-2-2H2"></path>
+            </svg>
+          </button>
+          <button class="tool-btn" data-tool="eraser" title="Eraser Tool (E) - Click or drag to erase" aria-label="Eraser tool">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path>
+              <path d="M22 21H7"></path>
+              <path d="m5 11 9 9"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="toolbar-divider" aria-hidden="true"></div>
+
+        <div class="tool-selector" role="group" aria-label="Shape tools">
+          <button class="tool-btn active" data-tool="rectangle" title="Rectangle Tool (R)" aria-label="Rectangle tool">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+            </svg>
+          </button>
+          <button class="tool-btn" data-tool="ellipse" title="Ellipse Tool (O)" aria-label="Ellipse tool">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <ellipse cx="12" cy="12" rx="9" ry="7"></ellipse>
+            </svg>
+          </button>
+          <button class="tool-btn" data-tool="line" title="Line Tool (L)" aria-label="Line tool">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="19" x2="19" y2="5"></line>
+            </svg>
+          </button>
+          <button class="tool-btn" data-tool="arrow" title="Arrow Tool (A)" aria-label="Arrow tool">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="19" x2="19" y2="5"></line>
+              <polyline points="10 5 19 5 19 14"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <div class="toolbar-divider" aria-hidden="true"></div>
+
+        <div class="tool-selector" role="group" aria-label="Mark tools">
+          <button class="tool-btn" data-tool="step" title="Numbered Step Marker (N)" aria-label="Step marker tool">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M12 7v10"></path>
+              <path d="M9.5 9.5 12 7"></path>
+            </svg>
+          </button>
+          <button class="tool-btn" data-tool="highlighter" title="Highlighter Tool (H)" aria-label="Highlighter tool">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m9 11-6 6v3h3l6-6"></path>
+              <path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"></path>
+            </svg>
+          </button>
+          <button class="tool-btn" data-tool="blur" title="Blur / Pixelate Redaction (B)" aria-label="Blur and pixelate tool">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+              <path d="M3 9h18"></path>
+              <path d="M3 15h18"></path>
+              <path d="M9 3v18"></path>
+              <path d="M15 3v18"></path>
+            </svg>
+          </button>
+          <button class="tool-btn" data-tool="text" title="Text Tool (T)" aria-label="Text tool">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="4 7 4 4 20 4 20 7"></polyline>
+              <line x1="9" y1="20" x2="15" y2="20"></line>
+              <line x1="12" y1="4" x2="12" y2="20"></line>
+            </svg>
+          </button>
+          <button class="tool-btn" data-tool="sticker" title="Sticker Tool (S)" aria-label="Sticker tool">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M8.5 14.5s1.2 1.8 3.5 1.8 3.5-1.8 3.5-1.8"></path>
+              <line x1="9" y1="9.5" x2="9.01" y2="9.5"></line>
+              <line x1="15" y1="9.5" x2="15.01" y2="9.5"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="action-group" role="group" aria-label="History">
+          <button id="btn-undo" class="btn-icon" title="Undo (Ctrl+Z)" aria-label="Undo" disabled>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+          </button>
+          <button id="btn-redo" class="btn-icon" title="Redo (Ctrl+Y)" aria-label="Redo" disabled>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="export-settings-control">
+          <button type="button" id="btn-export-settings" class="btn-icon" title="Export settings" aria-label="Export settings" aria-haspopup="dialog" aria-expanded="false" aria-controls="export-settings-panel">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="21" x2="4" y2="14"></line>
+              <line x1="4" y1="10" x2="4" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12" y2="3"></line>
+              <line x1="20" y1="21" x2="20" y2="16"></line>
+              <line x1="20" y1="12" x2="20" y2="3"></line>
+              <line x1="1" y1="14" x2="7" y2="14"></line>
+              <line x1="9" y1="8" x2="15" y2="8"></line>
+              <line x1="17" y1="16" x2="23" y2="16"></line>
+            </svg>
+          </button>
+          <div class="export-settings-panel hidden" id="export-settings-panel" role="dialog" aria-label="Export settings">
+            <div class="export-section">
+              <div class="export-section-title">Format</div>
+              <div class="export-format-row">
+                <select id="save-format" class="format-select" title="Save format" aria-label="Save format">
+                  <option value="png" selected>PNG</option>
+                  <option value="jpeg">JPEG</option>
+                  <option value="webp">WebP</option>
+                  <option value="pdf">PDF</option>
+                </select>
+                <div class="quality-control hidden" id="quality-control" title="Export quality (JPEG / WebP / PDF)">
+                  <input type="range" id="quality-slider" min="10" max="100" step="1" value="92" class="quality-slider" aria-label="Export quality">
+                  <span id="quality-val" class="quality-badge">92%</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="export-section">
+              <div class="export-section-title">Filename</div>
+              <label class="template-label" for="filename-template">Filename template</label>
+              <input type="text" id="filename-template" class="template-input" spellcheck="false" autocomplete="off" placeholder="screen-snap_{date}_{time}">
+              <div class="template-tokens" id="template-tokens" role="group" aria-label="Insert a token">
+                <button type="button" class="token-chip" data-token="{domain}">{domain}</button>
+                <button type="button" class="token-chip" data-token="{title}">{title}</button>
+                <button type="button" class="token-chip" data-token="{date}">{date}</button>
+                <button type="button" class="token-chip" data-token="{time}">{time}</button>
+                <button type="button" class="token-chip" data-token="{datetime}">{datetime}</button>
+                <button type="button" class="token-chip" data-token="{timestamp}">{timestamp}</button>
+                <button type="button" class="token-chip" data-token="{width}">{width}</button>
+                <button type="button" class="token-chip" data-token="{height}">{height}</button>
+                <button type="button" class="token-chip" data-token="{ext}">{ext}</button>
+              </div>
+              <div class="template-preview-row">
+                <span class="template-preview-label">Preview</span>
+                <code class="template-preview" id="template-preview">screen-snap_screenshot.png</code>
+              </div>
+              <div class="template-footer">
+                <span class="template-hint">Invalid characters are removed automatically.</span>
+                <button type="button" class="template-reset" id="btn-template-reset">Reset</button>
+              </div>
+            </div>
+
+            <div class="export-section">
+              <div class="beautify-header">
+                <span class="beautify-title">Beautify</span>
+                <label class="beautify-switch" title="Enable beautify">
+                  <input type="checkbox" id="beautify-enabled" aria-label="Enable beautify">
+                  <span class="beautify-switch-slider"></span>
+                </label>
+              </div>
+              <div class="beautify-presets" id="beautify-presets" role="group" aria-label="Preset styles">
+                <button type="button" class="beautify-preset" data-preset="none" title="Turn beautify off">
+                  <span class="beautify-preset-swatch beautify-swatch-none"></span>
+                  <span>Off</span>
+                </button>
+                <button type="button" class="beautify-preset" data-preset="sunset" title="Sunset gradient">
+                  <span class="beautify-preset-swatch" style="background: linear-gradient(135deg, #f97316, #db2777);"></span>
+                  <span>Sunset</span>
+                </button>
+                <button type="button" class="beautify-preset" data-preset="ocean" title="Ocean gradient">
+                  <span class="beautify-preset-swatch" style="background: linear-gradient(135deg, #0ea5e9, #4f46e5);"></span>
+                  <span>Ocean</span>
+                </button>
+                <button type="button" class="beautify-preset" data-preset="grape" title="Grape gradient">
+                  <span class="beautify-preset-swatch" style="background: linear-gradient(135deg, #8b5cf6, #ec4899);"></span>
+                  <span>Grape</span>
+                </button>
+                <button type="button" class="beautify-preset" data-preset="mint" title="Mint gradient">
+                  <span class="beautify-preset-swatch" style="background: linear-gradient(135deg, #34d399, #06b6d4);"></span>
+                  <span>Mint</span>
+                </button>
+                <button type="button" class="beautify-preset" data-preset="midnight" title="Midnight solid">
+                  <span class="beautify-preset-swatch" style="background: #0f172a;"></span>
+                  <span>Midnight</span>
+                </button>
+                <button type="button" class="beautify-preset" data-preset="snow" title="Snow solid">
+                  <span class="beautify-preset-swatch" style="background: #f1f5f9;"></span>
+                  <span>Snow</span>
+                </button>
+              </div>
+              <div class="beautify-body" id="beautify-body">
+                <div class="beautify-label">Background</div>
+                <div class="beautify-segment" id="beautify-bg-mode" role="group" aria-label="Background type">
+                  <button type="button" data-mode="solid">Solid</button>
+                  <button type="button" data-mode="gradient">Gradient</button>
+                </div>
+                <div class="beautify-colors">
+                  <label class="beautify-color" title="Background color">
+                    <input type="color" id="beautify-color">
+                    <span>Color</span>
+                  </label>
+                  <label class="beautify-color" id="beautify-color2-label" title="Gradient end color">
+                    <input type="color" id="beautify-color2">
+                    <span>Color 2</span>
+                  </label>
+                </div>
+                <div class="beautify-row">
+                  <label for="beautify-padding">Padding <span id="beautify-padding-val" class="beautify-value">64px</span></label>
+                  <input type="range" id="beautify-padding" min="0" max="160" step="4" value="64">
+                </div>
+                <div class="beautify-row">
+                  <label for="beautify-radius">Corners <span id="beautify-radius-val" class="beautify-value">18px</span></label>
+                  <input type="range" id="beautify-radius" min="0" max="64" step="2" value="18">
+                </div>
+                <label class="beautify-check">
+                  <input type="checkbox" id="beautify-shadow" checked>
+                  <span>Drop shadow</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button id="btn-save" class="btn-secondary" title="Save screenshot (Ctrl+S)" aria-label="Save screenshot">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Save</span>
+          <kbd class="kbd-hint" aria-hidden="true">Ctrl+S</kbd>
+        </button>
+        <button id="btn-copy" class="btn-primary" title="Copy screenshot and close tab (Ctrl+C or Enter)" aria-label="Copy screenshot to clipboard">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span>Copy to Clipboard</span>
+          <kbd class="kbd-hint" aria-hidden="true">Ctrl+C</kbd>
+        </button>
+      </div>
     </div>
 
-    <!-- Main Toolbar -->
-    <div class="toolbar">
-      <!-- Tool Selector -->
-      <div class="tool-selector" role="radiogroup" aria-label="Annotation Tool">
-        <button class="tool-btn" data-tool="select" title="Select Tool (V)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="m3 3 7 18 3-7 7-3L3 3z"></path>
-            <path d="m13 13 6 6"></path>
-          </svg>
-        </button>
-        <button class="tool-btn" data-tool="crop" title="Crop Tool (C) - Select area to crop">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 2v14a2 2 0 0 0 2 2h14"></path>
-            <path d="M18 22V8a2 2 0 0 0-2-2H2"></path>
-          </svg>
-        </button>
-        <button class="tool-btn" data-tool="eraser" title="Eraser Tool (E) - Click or drag to erase">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path>
-            <path d="M22 21H7"></path>
-            <path d="m5 11 9 9"></path>
-          </svg>
-        </button>
-        <button class="tool-btn active" data-tool="rectangle" title="Rectangle Tool (R)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-          </svg>
-        </button>
-        <button class="tool-btn" data-tool="ellipse" title="Ellipse Tool (O)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <ellipse cx="12" cy="12" rx="9" ry="7"></ellipse>
-          </svg>
-        </button>
-        <button class="tool-btn" data-tool="line" title="Line Tool (L)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="5" y1="19" x2="19" y2="5"></line>
-          </svg>
-        </button>
-        <button class="tool-btn" data-tool="arrow" title="Arrow Tool (A)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="5" y1="19" x2="19" y2="5"></line>
-            <polyline points="10 5 19 5 19 14"></polyline>
-          </svg>
-        </button>
-        <button class="tool-btn" data-tool="step" title="Numbered Step Marker (N)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="9"></circle>
-            <path d="M12 7v10"></path>
-            <path d="M9.5 9.5 12 7"></path>
-          </svg>
-        </button>
-        <button class="tool-btn" data-tool="highlighter" title="Highlighter Tool (H)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="m9 11-6 6v3h3l6-6"></path>
-            <path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"></path>
-          </svg>
-        </button>
-        <button class="tool-btn" data-tool="blur" title="Blur / Pixelate Redaction (B)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-            <path d="M3 9h18"></path>
-            <path d="M3 15h18"></path>
-            <path d="M9 3v18"></path>
-            <path d="M15 3v18"></path>
-          </svg>
-        </button>
-        <button class="tool-btn" data-tool="text" title="Text Tool (T)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="4 7 4 4 20 4 20 7"></polyline>
-            <line x1="9" y1="20" x2="15" y2="20"></line>
-            <line x1="12" y1="4" x2="12" y2="20"></line>
-          </svg>
-        </button>
-        <button class="tool-btn" data-tool="sticker" title="Sticker Tool (S)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="9"></circle>
-            <path d="M8.5 14.5s1.2 1.8 3.5 1.8 3.5-1.8 3.5-1.8"></path>
-            <line x1="9" y1="9.5" x2="9.01" y2="9.5"></line>
-            <line x1="15" y1="9.5" x2="15.01" y2="9.5"></line>
-          </svg>
-        </button>
+    <div class="topbar-context">
+      <div class="context-style" role="group" aria-label="Color and stroke">
+        <div class="color-palette" title="Select Border Color" role="group" aria-label="Border color">
+          <button class="color-btn active" data-color="#ef4444" style="--c: #ef4444;" title="Crimson Red" aria-label="Crimson red"></button>
+          <button class="color-btn" data-color="#f97316" style="--c: #f97316;" title="Orange" aria-label="Orange"></button>
+          <button class="color-btn" data-color="#eab308" style="--c: #eab308;" title="Yellow" aria-label="Yellow"></button>
+          <button class="color-btn" data-color="#22c55e" style="--c: #22c55e;" title="Green" aria-label="Green"></button>
+          <button class="color-btn" data-color="#06b6d4" style="--c: #06b6d4;" title="Cyan" aria-label="Cyan"></button>
+          <button class="color-btn" data-color="#3b82f6" style="--c: #3b82f6;" title="Blue" aria-label="Blue"></button>
+          <button class="color-btn" data-color="#ffffff" style="--c: #ffffff;" title="White" aria-label="White"></button>
+          <label class="custom-color-label" title="Custom color picker">
+            <input type="color" id="custom-color-picker" value="#ef4444" aria-label="Custom color">
+            <span class="custom-color-preview"></span>
+          </label>
+        </div>
+
+        <div class="toolbar-divider" aria-hidden="true"></div>
+
+        <div class="stroke-selector" title="Stroke Thickness" role="group" aria-label="Stroke thickness">
+          <button class="stroke-btn" data-stroke="2" title="Thin (2px)" aria-label="Thin stroke, 2 pixels">
+            <span class="stroke-dot" style="width: 4px; height: 4px;"></span>
+          </button>
+          <button class="stroke-btn active" data-stroke="4" title="Medium (4px)" aria-label="Medium stroke, 4 pixels">
+            <span class="stroke-dot" style="width: 7px; height: 7px;"></span>
+          </button>
+          <button class="stroke-btn" data-stroke="7" title="Thick (7px)" aria-label="Thick stroke, 7 pixels">
+            <span class="stroke-dot" style="width: 10px; height: 10px;"></span>
+          </button>
+          <button class="stroke-btn" data-stroke="11" title="Bold (11px)" aria-label="Bold stroke, 11 pixels">
+            <span class="stroke-dot" style="width: 13px; height: 13px;"></span>
+          </button>
+        </div>
       </div>
 
-      <div class="toolbar-divider"></div>
+      <div class="context-tool">
+        <span class="context-tool-name" id="context-tool-name">Rectangle</span>
+        <div class="tool-context-group" id="tool-context-group">
+          <div class="toolbar-divider" aria-hidden="true"></div>
 
-      <!-- Color Palette -->
-      <div class="color-palette" title="Select Border Color">
-        <button class="color-btn active" data-color="#ef4444" style="--c: #ef4444;" title="Crimson Red"></button>
-        <button class="color-btn" data-color="#f97316" style="--c: #f97316;" title="Orange"></button>
-        <button class="color-btn" data-color="#eab308" style="--c: #eab308;" title="Yellow"></button>
-        <button class="color-btn" data-color="#22c55e" style="--c: #22c55e;" title="Green"></button>
-        <button class="color-btn" data-color="#06b6d4" style="--c: #06b6d4;" title="Cyan"></button>
-        <button class="color-btn" data-color="#3b82f6" style="--c: #3b82f6;" title="Blue"></button>
-        <button class="color-btn" data-color="#ffffff" style="--c: #ffffff;" title="White"></button>
-        <label class="custom-color-label" title="Custom color picker">
-          <input type="color" id="custom-color-picker" value="#ef4444">
-          <span class="custom-color-preview"></span>
+          <div class="opacity-control" id="opacity-control" title="Highlighter Opacity">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"></path>
+            </svg>
+            <span class="opacity-label">Opacity</span>
+            <input type="range" id="opacity-slider" min="15" max="85" step="5" value="40" class="opacity-slider" title="Adjust Opacity (15% - 85%)" aria-label="Highlighter opacity">
+            <span id="opacity-val" class="opacity-badge">40%</span>
+          </div>
+
+          <div class="blur-controls" id="blur-controls" title="Redaction Settings">
+            <div class="redact-mode-toggle" id="redact-mode-toggle" role="group" aria-label="Redaction Style">
+              <button type="button" class="mode-btn active" data-mode="pixelate" title="Pixelate Mode" aria-label="Pixelate mode">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                <span>Pixelate</span>
+              </button>
+              <button type="button" class="mode-btn" data-mode="blur" title="Smooth Blur Mode" aria-label="Smooth blur mode">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <circle cx="12" cy="12" r="4"></circle>
+                </svg>
+                <span>Blur</span>
+              </button>
+            </div>
+            <div class="intensity-group" title="Redaction Intensity">
+              <span class="intensity-label">Intensity</span>
+              <input type="range" id="blur-intensity-slider" min="1" max="5" step="1" value="3" class="blur-slider" title="Adjust Intensity (1 to 5)" aria-label="Redaction intensity">
+              <span id="blur-intensity-val" class="intensity-badge">3</span>
+            </div>
+          </div>
+
+          <div class="crop-controls" id="crop-controls" title="Crop Actions">
+            <span class="crop-badge" id="crop-dim-badge">0 × 0 px</span>
+            <button type="button" class="btn-crop-action btn-crop-apply" id="btn-crop-apply" title="Apply Crop (Enter)" aria-label="Apply crop">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Apply</span>
+            </button>
+            <button type="button" class="btn-crop-action btn-crop-cancel" id="btn-crop-cancel" title="Cancel Crop (Esc)" aria-label="Cancel crop">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              <span>Cancel</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="context-actions">
+        <label class="toggle-control" title="Toggle URL bar at the top of the screenshot">
+          <input type="checkbox" id="toggle-url-bar" checked>
+          <span class="toggle-slider"></span>
+          <span class="toggle-text">URL Bar</span>
         </label>
-      </div>
 
-      <div class="toolbar-divider"></div>
+        <div class="toolbar-divider" aria-hidden="true"></div>
 
-      <!-- Stroke Thickness -->
-      <div class="stroke-selector" title="Stroke Thickness">
-        <button class="stroke-btn" data-stroke="2" title="Thin (2px)">
-          <span class="stroke-dot" style="width: 4px; height: 4px;"></span>
-        </button>
-        <button class="stroke-btn active" data-stroke="4" title="Medium (4px)">
-          <span class="stroke-dot" style="width: 7px; height: 7px;"></span>
-        </button>
-        <button class="stroke-btn" data-stroke="7" title="Thick (7px)">
-          <span class="stroke-dot" style="width: 10px; height: 10px;"></span>
-        </button>
-        <button class="stroke-btn" data-stroke="11" title="Bold (11px)">
-          <span class="stroke-dot" style="width: 13px; height: 13px;"></span>
-        </button>
-      </div>
-
-      <!-- Tool-Specific Context Settings (Highlighter Opacity or Blur Redaction) -->
-      <div class="tool-context-group" id="tool-context-group">
-        <div class="toolbar-divider"></div>
-
-        <!-- Opacity Setting -->
-        <div class="opacity-control" id="opacity-control" title="Highlighter Opacity">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="9"></circle>
-            <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"></path>
-          </svg>
-          <span class="opacity-label">Opacity</span>
-          <input type="range" id="opacity-slider" min="15" max="85" step="5" value="40" class="opacity-slider" title="Adjust Opacity (15% - 85%)">
-          <span id="opacity-val" class="opacity-badge">40%</span>
-        </div>
-
-        <!-- Redaction / Blur Controls -->
-        <div class="blur-controls" id="blur-controls" title="Redaction Settings">
-          <div class="redact-mode-toggle" id="redact-mode-toggle" role="group" aria-label="Redaction Style">
-            <button type="button" class="mode-btn active" data-mode="pixelate" title="Pixelate Mode">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="7" height="7"></rect>
-                <rect x="14" y="3" width="7" height="7"></rect>
-                <rect x="14" y="14" width="7" height="7"></rect>
-                <rect x="3" y="14" width="7" height="7"></rect>
-              </svg>
-              <span>Pixelate</span>
-            </button>
-            <button type="button" class="mode-btn" data-mode="blur" title="Smooth Blur Mode">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="9"></circle>
-                <circle cx="12" cy="12" r="4"></circle>
-              </svg>
-              <span>Blur</span>
-            </button>
-          </div>
-          <div class="intensity-group" title="Redaction Intensity">
-            <span class="intensity-label">Intensity</span>
-            <input type="range" id="blur-intensity-slider" min="1" max="5" step="1" value="3" class="blur-slider" title="Adjust Intensity (1 to 5)">
-            <span id="blur-intensity-val" class="intensity-badge">3</span>
-          </div>
-        </div>
-
-        <!-- Crop Controls -->
-        <div class="crop-controls" id="crop-controls" title="Crop Actions">
-          <span class="crop-badge" id="crop-dim-badge">0 × 0 px</span>
-          <button type="button" class="btn-crop-action btn-crop-apply" id="btn-crop-apply" title="Apply Crop (Enter)">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="20 6 9 17 4 12"></polyline>
+        <div class="action-group" role="group" aria-label="Selection actions">
+          <button id="btn-delete" class="btn-icon btn-danger-hover" title="Delete selected annotation (Delete / Backspace)" aria-label="Delete selected annotation" disabled>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
             </svg>
-            <span>Apply</span>
           </button>
-          <button type="button" class="btn-crop-action btn-crop-cancel" id="btn-crop-cancel" title="Cancel Crop (Esc)">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
+          <button id="btn-clear" class="btn-icon btn-danger-hover" title="Clear all annotations" aria-label="Clear all annotations" disabled>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             </svg>
-            <span>Cancel</span>
           </button>
         </div>
       </div>
-
-      <div class="toolbar-divider"></div>
-
-      <!-- URL Bar Toggle -->
-      <label class="toggle-control" title="Toggle URL bar at the top of the screenshot">
-        <input type="checkbox" id="toggle-url-bar" checked>
-        <span class="toggle-slider"></span>
-        <span class="toggle-text">URL Bar</span>
-      </label>
-
-      <div class="toolbar-divider"></div>
-
-      <!-- History & Element Actions -->
-      <div class="action-group">
-        <button id="btn-undo" class="btn-icon" title="Undo (Ctrl+Z)" disabled>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="1 4 1 10 7 10"></polyline>
-            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-          </svg>
-        </button>
-        <button id="btn-redo" class="btn-icon" title="Redo (Ctrl+Y)" disabled>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-          </svg>
-        </button>
-        <button id="btn-delete" class="btn-icon btn-danger-hover" title="Delete selected annotation (Delete / Backspace)" disabled>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            <line x1="10" y1="11" x2="10" y2="17"></line>
-            <line x1="14" y1="11" x2="14" y2="17"></line>
-          </svg>
-        </button>
-        <button id="btn-clear" class="btn-icon btn-danger-hover" title="Clear all annotations" disabled>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <!-- Export Actions: Save & Copy -->
-    <div class="header-actions">
-      <div class="export-controls">
-        <select id="save-format" class="format-select" title="Save format" aria-label="Save format">
-          <option value="png" selected>PNG</option>
-          <option value="jpeg">JPEG</option>
-          <option value="webp">WebP</option>
-          <option value="pdf">PDF</option>
-        </select>
-        <div class="quality-control hidden" id="quality-control" title="Export quality (JPEG / WebP / PDF)">
-          <input type="range" id="quality-slider" min="10" max="100" step="1" value="92" class="quality-slider" aria-label="Export quality">
-          <span id="quality-val" class="quality-badge">92%</span>
-        </div>
-      </div>
-      <div class="filename-control">
-        <button type="button" id="btn-filename-template" class="btn-icon" title="Filename template" aria-haspopup="dialog" aria-expanded="false" aria-controls="filename-template-panel">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 3 14 8 19 8"></polyline>
-            <line x1="9" y1="13" x2="15" y2="13"></line>
-            <line x1="9" y1="17" x2="13" y2="17"></line>
-          </svg>
-        </button>
-        <div class="template-panel hidden" id="filename-template-panel" role="dialog" aria-label="Filename template">
-          <label class="template-label" for="filename-template">Filename template</label>
-          <input type="text" id="filename-template" class="template-input" spellcheck="false" autocomplete="off" placeholder="screen-snap_{date}_{time}">
-          <div class="template-tokens" id="template-tokens" role="group" aria-label="Insert a token">
-            <button type="button" class="token-chip" data-token="{domain}">{domain}</button>
-            <button type="button" class="token-chip" data-token="{title}">{title}</button>
-            <button type="button" class="token-chip" data-token="{date}">{date}</button>
-            <button type="button" class="token-chip" data-token="{time}">{time}</button>
-            <button type="button" class="token-chip" data-token="{datetime}">{datetime}</button>
-            <button type="button" class="token-chip" data-token="{timestamp}">{timestamp}</button>
-            <button type="button" class="token-chip" data-token="{width}">{width}</button>
-            <button type="button" class="token-chip" data-token="{height}">{height}</button>
-            <button type="button" class="token-chip" data-token="{ext}">{ext}</button>
-          </div>
-          <div class="template-preview-row">
-            <span class="template-preview-label">Preview</span>
-            <code class="template-preview" id="template-preview">screen-snap_screenshot.png</code>
-          </div>
-          <div class="template-footer">
-            <span class="template-hint">Invalid characters are removed automatically.</span>
-            <button type="button" class="template-reset" id="btn-template-reset">Reset</button>
-          </div>
-        </div>
-      </div>
-      <div class="beautify-control">
-        <button type="button" id="btn-beautify" class="btn-icon beautify-toggle-btn" title="Beautify (background, padding, corners & shadow)" aria-haspopup="dialog" aria-expanded="false" aria-controls="beautify-panel">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="m12 3 1.9 4.8L19 9.7l-4.3 3.4 1.6 5.2L12 15.6l-4.3 2.7 1.6-5.2L5 9.7l5.1-1.9L12 3z"></path>
-          </svg>
-        </button>
-        <div class="beautify-panel hidden" id="beautify-panel" role="dialog" aria-label="Beautify settings">
-          <div class="beautify-header">
-            <span class="beautify-title">Beautify</span>
-            <label class="beautify-switch" title="Enable beautify">
-              <input type="checkbox" id="beautify-enabled">
-              <span class="beautify-switch-slider"></span>
-            </label>
-          </div>
-          <div class="beautify-presets" id="beautify-presets" role="group" aria-label="Preset styles">
-            <button type="button" class="beautify-preset" data-preset="none" title="Turn beautify off">
-              <span class="beautify-preset-swatch beautify-swatch-none"></span>
-              <span>Off</span>
-            </button>
-            <button type="button" class="beautify-preset" data-preset="sunset" title="Sunset gradient">
-              <span class="beautify-preset-swatch" style="background: linear-gradient(135deg, #f97316, #db2777);"></span>
-              <span>Sunset</span>
-            </button>
-            <button type="button" class="beautify-preset" data-preset="ocean" title="Ocean gradient">
-              <span class="beautify-preset-swatch" style="background: linear-gradient(135deg, #0ea5e9, #4f46e5);"></span>
-              <span>Ocean</span>
-            </button>
-            <button type="button" class="beautify-preset" data-preset="grape" title="Grape gradient">
-              <span class="beautify-preset-swatch" style="background: linear-gradient(135deg, #8b5cf6, #ec4899);"></span>
-              <span>Grape</span>
-            </button>
-            <button type="button" class="beautify-preset" data-preset="mint" title="Mint gradient">
-              <span class="beautify-preset-swatch" style="background: linear-gradient(135deg, #34d399, #06b6d4);"></span>
-              <span>Mint</span>
-            </button>
-            <button type="button" class="beautify-preset" data-preset="midnight" title="Midnight solid">
-              <span class="beautify-preset-swatch" style="background: #0f172a;"></span>
-              <span>Midnight</span>
-            </button>
-            <button type="button" class="beautify-preset" data-preset="snow" title="Snow solid">
-              <span class="beautify-preset-swatch" style="background: #f1f5f9;"></span>
-              <span>Snow</span>
-            </button>
-          </div>
-          <div class="beautify-body" id="beautify-body">
-            <div class="beautify-label">Background</div>
-            <div class="beautify-segment" id="beautify-bg-mode" role="group" aria-label="Background type">
-              <button type="button" data-mode="solid">Solid</button>
-              <button type="button" data-mode="gradient">Gradient</button>
-            </div>
-            <div class="beautify-colors">
-              <label class="beautify-color" title="Background color">
-                <input type="color" id="beautify-color">
-                <span>Color</span>
-              </label>
-              <label class="beautify-color" id="beautify-color2-label" title="Gradient end color">
-                <input type="color" id="beautify-color2">
-                <span>Color 2</span>
-              </label>
-            </div>
-            <div class="beautify-row">
-              <label for="beautify-padding">Padding <span id="beautify-padding-val" class="beautify-value">64px</span></label>
-              <input type="range" id="beautify-padding" min="0" max="160" step="4" value="64">
-            </div>
-            <div class="beautify-row">
-              <label for="beautify-radius">Corners <span id="beautify-radius-val" class="beautify-value">18px</span></label>
-              <input type="range" id="beautify-radius" min="0" max="64" step="2" value="18">
-            </div>
-            <label class="beautify-check">
-              <input type="checkbox" id="beautify-shadow" checked>
-              <span>Drop shadow</span>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <button id="btn-save" class="btn-secondary" title="Save screenshot (Ctrl+S)">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="7 10 12 15 17 10"></polyline>
-          <line x1="12" y1="15" x2="12" y2="3"></line>
-        </svg>
-        <span>Save</span>
-        <kbd class="kbd-hint">Ctrl+S</kbd>
-      </button>
-      <button id="btn-copy" class="btn-primary" title="Copy screenshot and close tab (Ctrl+C or Enter)">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-        </svg>
-        <span>Copy to Clipboard</span>
-        <kbd class="kbd-hint">Ctrl+C</kbd>
-      </button>
     </div>
   </header>
 
@@ -476,6 +492,9 @@
       <span class="toast-desc" id="toast-desc">Tab will close automatically...</span>
     </div>
   </div>
+
+  <!-- Tool hover label -->
+  <div id="tool-tooltip" class="tool-tooltip" role="tooltip" hidden></div>
 
   <script src="editor.js"></script>
 </body>
