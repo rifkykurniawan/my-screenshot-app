@@ -1976,3 +1976,26 @@ body {
   border-color: rgba(56, 189, 248, 0.5);
 }
 
+/* Tool hover label */
+.tool-tooltip {
+  position: fixed;
+  z-index: 120;
+  padding: 6px 10px;
+  background: #111827;
+  border: 1px solid var(--border-hover);
+  border-radius: 8px;
+  color: var(--text-main);
+  font-family: var(--font-family);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  transform: translateY(-50%);
+}
+
+.tool-tooltip[hidden] {
+  display: none;
+}
+

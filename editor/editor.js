@@ -9,6 +9,7 @@
   const toast = document.getElementById('toast');
   const toastTitle = document.getElementById('toast-title');
   const toastDesc = document.getElementById('toast-desc');
+  const toolTooltip = document.getElementById('tool-tooltip');
 
   // Toolbar Elements
   const toolBtns = document.querySelectorAll('.tool-btn');
@@ -244,6 +245,9 @@
   async function init() {
     document.querySelectorAll('.app-header svg').forEach((svg) => {
       svg.setAttribute('aria-hidden', 'true');
+    });
+    toolBtns.forEach((btn) => {
+      btn.removeAttribute('title');
     });
     colorBtns.forEach((btn) => {
       btn.setAttribute('aria-pressed', btn.classList.contains('active') ? 'true' : 'false');
@@ -2062,6 +2066,32 @@
     render();
   }
 
+  function showToolTooltip(btn) {
+    if (!toolTooltip || !btn) return;
+    const label = TOOL_LABELS[btn.dataset.tool] || btn.getAttribute('aria-label') || btn.dataset.tool || '';
+    if (!label) return;
+    toolTooltip.textContent = label;
+    toolTooltip.hidden = false;
+    const rect = btn.getBoundingClientRect();
+    const tipRect = toolTooltip.getBoundingClientRect();
+    let left = rect.left - tipRect.width - 10;
+    let top = rect.top + rect.height / 2;
+    if (left < 8) {
+      left = rect.right + 10;
+    }
+    if (left + tipRect.width > window.innerWidth - 8) {
+      left = window.innerWidth - tipRect.width - 8;
+    }
+    top = Math.max(tipRect.height / 2 + 8, Math.min(window.innerHeight - tipRect.height / 2 - 8, top));
+    toolTooltip.style.left = `${Math.round(left)}px`;
+    toolTooltip.style.top = `${Math.round(top)}px`;
+  }
+
+  function hideToolTooltip() {
+    if (!toolTooltip) return;
+    toolTooltip.hidden = true;
+  }
+
   // Event Listeners
   function setupEventListeners() {
     canvas.addEventListener('mousedown', onMouseDown);
@@ -2071,10 +2101,19 @@
 
     // Tool selector buttons
     toolBtns.forEach(btn => {
+      btn.addEventListener('mouseenter', () => showToolTooltip(btn));
+      btn.addEventListener('mouseleave', hideToolTooltip);
+      btn.addEventListener('focus', () => showToolTooltip(btn));
+      btn.addEventListener('blur', hideToolTooltip);
       btn.addEventListener('click', () => {
+        hideToolTooltip();
         setTool(btn.dataset.tool);
       });
     });
+    window.addEventListener('scroll', hideToolTooltip, true);
+    window.addEventListener('resize', hideToolTooltip);
+    const toolRail = document.querySelector('.toolbar');
+    if (toolRail) toolRail.addEventListener('scroll', hideToolTooltip);
 
     // Sticker palette
     stickerPalletBtns.forEach(btn => {
@@ -2493,6 +2532,7 @@
     window.addEventListener('blur', () => {
       isSpaceDown = false;
       if (isPanning) endPan();
+      hideToolTooltip();
       canvas.style.cursor = '';
     });
 
