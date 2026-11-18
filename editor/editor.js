@@ -113,7 +113,7 @@
   let currentRedactIntensity = 3;      // 1 to 5 (default: 3)
   let currentSticker = '⭐';            // Emoji used by the sticker stamp tool
   let currentHighlighterPoints = [];
-  let showUrlBar = true;
+  let showUrlBar = false;
   let isDrawing = false;
   let startX = 0;
   let startY = 0;
@@ -357,7 +357,7 @@
 
     tctx.font = '16px system-ui, sans-serif';
     tctx.fillStyle = '#94a3b8';
-    tctx.fillText('Notice the URL bar above! Draw shapes, lines, arrows, highlights, blur/pixelate, or text, then Copy.', testCanvas.width / 2, testCanvas.height / 2 + 20);
+    tctx.fillText('Turn on the URL Bar toggle to show the source URL. Draw shapes, lines, arrows, highlights, blur/pixelate, or text, then Copy.', testCanvas.width / 2, testCanvas.height / 2 + 20);
 
     baseImage = testCanvas;
     if (undoStack.length === 1 && !undoStack[0].baseImage) {

@@ -16,7 +16,7 @@ A lightweight, productivity-focused Chrome extension for capturing and annotatin
 - **Select-area Capture**: A dimmed overlay shows a frozen copy of the page; drag the region you want and the crop opens directly in the editor. Press `Esc` to cancel.
 - **Full-page Capture**: Scrolls the page automatically, grabs a slice per viewport, and stitches them on a canvas. Fixed/sticky headers are hidden after the first slice so they don't repeat, scrollbars are hidden, and your original scroll position is restored. Press `Esc` to cancel.
 - **DevTools / Inspect Element Capture**: Captures the complete browser window with docked developer tools (Console, Network, Elements, etc.) without cropping.
-- **Top URL & Timestamp Header**: Automatically appends a clean browser-style top banner containing the source page URL and capture timestamp (YYYY-MM-DD HH:MM:SS) for viewport captures. Includes an on/off toggle in the toolbar.
+- **Top URL & Timestamp Header**: Adds a clean browser-style top banner containing the source page URL and capture timestamp (YYYY-MM-DD HH:MM:SS) for viewport captures. Includes an on/off toggle in the toolbar (off by default).
 - **Annotation Tools (Select, Eraser, Rectangle, Ellipse, Line, Arrow, Step, Highlight, Blur, Text)**: 
   - **Select & Edit Tool (`V`)**: Click any existing annotation to select it, drag to move, drag 8-point handles to resize, nudge with Arrow keys, change colors/strokes live, or press `Delete` / `Backspace` to remove. Double-click text annotations to edit inline.
   - **Eraser Tool (`E`)**: Click any annotation or drag across multiple annotations to remove them instantly with red hover highlight preview, step renumbering, and full undo support.
