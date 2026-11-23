@@ -1,0 +1,151 @@
+/*
+ * Screen Snap design tokens.
+ * Raw values live here only; surface CSS references these.
+ * Direction and reasons: Plan/design-direction.md.
+ */
+@layer tokens, base, components;
+
+@layer tokens {
+  :root {
+    /* Primitive palette */
+    --slate-950: #090d16;
+    --slate-900: #0f172a;
+    --slate-800: #1e293b;
+    --slate-750: #273549;
+    --slate-500: #64748b;
+    --slate-400: #94a3b8;
+    --slate-300: #cbd5e1;
+    --slate-100: #f1f5f9;
+    --slate-50: #f8fafc;
+
+    --blue-500: #3b82f6;
+    --blue-600: #2563eb;
+    --sky-400: #38bdf8;
+
+    --emerald-500: #10b981;
+    --emerald-400: #34d399;
+    --emerald-300: #6ee7b7;
+
+    --violet-400: #a78bfa;
+    --violet-300: #c084fc;
+
+    --amber-400: #fbbf24;
+    --amber-300: #fcd34d;
+
+    --pink-400: #f472b6;
+    --pink-300: #f9a8d4;
+
+    --red-500: #ef4444;
+
+    /* Surfaces and borders */
+    --surface-app: var(--slate-950);
+    --surface-workspace: var(--slate-900);
+    --surface-panel: rgba(19, 26, 42, 0.85);
+    --surface-raised: var(--slate-800);
+    --surface-raised-hover: var(--slate-750);
+    --surface-inset: rgba(255, 255, 255, 0.05);
+
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.18);
+    --border-accent: rgba(56, 189, 248, 0.4);
+
+    /* Text. --text-faint is 6.4:1 on the workspace and 4.8:1 on raised cards. */
+    --text-main: var(--slate-50);
+    --text-strong: var(--slate-100);
+    --text-muted: var(--slate-400);
+    --text-faint: #8795ad;
+    --text-on-accent: #ffffff;
+
+    /* Accents. Action blue matches the editor; brand sky matches the popup mark. */
+    --accent: var(--blue-500);
+    --accent-hover: var(--blue-600);
+    --accent-brand: var(--sky-400);
+    --accent-soft: rgba(56, 189, 248, 0.15);
+    --success: var(--emerald-500);
+    --danger: var(--red-500);
+
+    /* Capture mode hues: functional wayfinding, not decoration. */
+    --mode-viewport: var(--sky-400);
+    --mode-devtools: var(--violet-400);
+    --mode-devtools-hover: var(--violet-300);
+    --mode-area: var(--emerald-400);
+    --mode-area-hover: var(--emerald-300);
+    --mode-fullpage: var(--amber-400);
+    --mode-fullpage-hover: var(--amber-300);
+    --mode-delayed: var(--pink-400);
+    --mode-delayed-hover: var(--pink-300);
+
+    /* Focus */
+    --focus-ring: var(--accent);
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 2px;
+
+    /* Radius */
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-pill: 999px;
+
+    /* Space */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-6: 24px;
+
+    /* Type */
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-system: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+    --text-2xs: 10px;
+    --text-xs: 11px;
+    --text-sm: 12px;
+    --text-md: 13px;
+    --text-base: 14px;
+    --text-lg: 16px;
+    --text-xl: 18px;
+    --text-2xl: 22px;
+
+    --weight-regular: 400;
+    --weight-medium: 500;
+    --weight-semibold: 600;
+    --weight-bold: 700;
+
+    --leading-tight: 1.2;
+    --leading-normal: 1.4;
+
+    /* Motion */
+    --dur-fast: 150ms;
+    --dur-base: 200ms;
+    --dur-slow: 300ms;
+    --ease-standard: ease-in-out;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* Elevation: layer markers only, never a default card treatment. */
+    --shadow-brand: 0 2px 8px rgba(37, 99, 235, 0.35);
+    --shadow-action: 0 4px 14px rgba(37, 99, 235, 0.35);
+    --shadow-action-hover: 0 6px 20px rgba(37, 99, 235, 0.5);
+    --shadow-float: 0 12px 30px rgba(0, 0, 0, 0.6);
+    --shadow-panel: 0 18px 40px rgba(0, 0, 0, 0.55);
+    --shadow-tooltip: 0 8px 20px rgba(0, 0, 0, 0.45);
+    --shadow-canvas: 0 20px 50px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+    /* State glows */
+    --glow-accent: 0 0 6px rgba(59, 130, 246, 0.6);
+    --glow-success: 0 0 10px rgba(16, 185, 129, 0.4);
+
+    /* Scrollbars */
+    --scrollbar-size: 6px;
+    --scrollbar-thumb: rgba(148, 163, 184, 0.35);
+    --scrollbar-thumb-hover: rgba(148, 163, 184, 0.55);
+
+    /* Layering */
+    --z-canvas-overlay: 20;
+    --z-floating: 40;
+    --z-header: 50;
+    --z-panel: 80;
+    --z-toast: 100;
+    --z-tooltip: 120;
+  }
+}
