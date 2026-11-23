@@ -1,7 +1,7 @@
 # Base UI Foundation: 5-Day Plan
 
-Status: planned, not started
-Started:
+Status: Day 1 code complete, Chrome check pending
+Started: 2026-11-23
 Last updated: 2026-11-23
 
 One shared base layer (tokens, base styles, shared components) for `popup/` and `editor/`, so both surfaces stop carrying duplicated colors, buttons, chips, toggles and focus rules. No feature changes, no JS rewrite.
@@ -12,7 +12,7 @@ Main files: `styles/tokens.css` (new), `styles/base.css` (new), `styles/componen
 
 | Day | Focus | Status |
 | :--- | :--- | :--- |
-| 1 | Direction, tokens, base layer | Not started |
+| 1 | Direction, tokens, base layer | Code complete, check pending |
 | 2 | Type and color correctness | Not started |
 | 3 | Shared components, part 1 | Not started |
 | 4 | Shared components, part 2, states | Not started |
@@ -35,22 +35,26 @@ Reasons:
 - [ ] **Keep per-mode icon hues in the popup** (violet, emerald, amber, pink) as functional wayfinding, exposed as `--mode-*` tokens, while all chrome uses one accent. Recommended, because the hues map to capture modes and speed up scanning. The core palette stays slate plus one blue accent; mode hues are functional status colors, not decoration.
 - [ ] **Font route**: self-host Plus Jakarta Sans in `fonts/` and drop the Google Fonts `<link>`. This removes a third-party render-blocking request and makes the README's "100% local" claim true. If the font files cannot be fetched, fall back to the system stack through `--font-family`; nothing else in the plan depends on the font.
 
+The mode hues are already exposed as `--mode-*` tokens in `styles/tokens.css`. The font route is still open and blocks Day 2.
+
 ## Why 5 days is not too much
 
 Core work is about 3 focused days. Day 5 is the verification buffer: popup at 320px, editor at five breakpoints, keyboard-only pass, reduced motion, and the AFTER-mode audit. Five days keeps the migration honest instead of rushing a 2,000-line stylesheet.
 
 ## Day 1: Direction, tokens, base layer
 
-- [ ] Write the direction fields above into a short `Plan/design-direction.md` (identity, palette, type, dials, one-line reason per choice)
-- [ ] Create `styles/tokens.css` with semantic tokens only:
+- [x] Write the direction fields above into a short `Plan/design-direction.md` (identity, palette, type, dials, one-line reason per choice)
+- [x] Create `styles/tokens.css` with semantic tokens only:
   - surfaces (`--surface-app`, `--surface-panel`, `--surface-raised`), borders, text (`--text-main`, `--text-muted`, `--text-faint` with a tested contrast ratio), accent, danger, success
   - `--mode-viewport`, `--mode-devtools`, `--mode-area`, `--mode-fullpage`, `--mode-delayed`
   - radius scale (4 / 6 / 8 / 12), space scale (4 / 8 / 12 / 16 / 24), type scale and weights
   - focus ring, elevation, motion (`--ease`, `--dur-fast: 150ms`)
   - layer order declared once: `@layer tokens, base, components;`
-- [ ] Create `styles/base.css`: reset, global `:focus-visible` ring, `cursor: pointer` for enabled controls and `cursor: not-allowed` for disabled controls, `prefers-reduced-motion` rule for all surfaces, scrollbar styling, base button and input typography
-- [ ] Link `tokens.css` and `base.css` from both HTML files before the surface stylesheet
+- [x] Create `styles/base.css`: reset, global `:focus-visible` ring, `cursor: pointer` for enabled controls and `cursor: not-allowed` for disabled controls, `prefers-reduced-motion` rule for all surfaces, scrollbar styling, base button and input typography
+- [x] Link `tokens.css` and `base.css` from both HTML files before the surface stylesheet
 - **Done when:** both surfaces render identically to today at their default sizes, with no JS changes. The HTML diff touches only `<link>` lines.
+
+Status: code complete on 2026-11-23. Visual parity still needs a load-unpacked check in Chrome. The only rules that can shift rendering are the global scrollbar treatment on editor panels that were never scrollbar-styled, and the new keyboard focus ring where a surface rule did not already provide one.
 
 ## Day 2: Type and color correctness
 
