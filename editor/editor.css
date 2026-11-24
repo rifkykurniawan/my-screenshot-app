@@ -11,7 +11,6 @@
   --accent-blue-hover: #2563eb;
   --accent-emerald: #10b981;
   --danger: #ef4444;
-  --font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --topbar-primary-height: 56px;
   --topbar-context-height: 44px;
   --topbar-height: calc(var(--topbar-primary-height) + var(--topbar-context-height) + 1px);

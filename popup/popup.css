@@ -1,13 +1,6 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background-color: #0f172a;
-  color: #f8fafc;
+  background-color: var(--surface-workspace);
+  color: var(--text-main);
   width: 320px;
   overflow: hidden;
   user-select: none;
@@ -15,7 +8,6 @@ body {
 
 .popup-container {
   display: flex;
-  flex-direction: border-box;
   flex-direction: column;
   padding: 14px;
   gap: 12px;
@@ -25,7 +17,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--border-subtle);
   padding-bottom: 10px;
 }
 
@@ -33,23 +25,23 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #38bdf8;
+  color: var(--accent-brand);
 }
 
 .app-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #f1f5f9;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--text-strong);
   letter-spacing: -0.01em;
 }
 
 .badge {
-  font-size: 10px;
-  font-weight: 600;
-  background: rgba(56, 189, 248, 0.15);
-  color: #38bdf8;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  background: var(--accent-soft);
+  color: var(--accent-brand);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 
 .modes-list {
@@ -62,20 +54,20 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #1e293b;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
   padding: 10px 12px;
   text-align: left;
   cursor: pointer;
   color: inherit;
-  transition: all 0.15s ease-in-out;
+  transition: all var(--dur-fast) var(--ease-standard);
   position: relative;
 }
 
 .mode-card:hover {
-  background: #273549;
-  border-color: rgba(56, 189, 248, 0.4);
+  background: var(--surface-raised-hover);
+  border-color: var(--border-action);
   transform: translateY(-1px);
 }
 
@@ -89,52 +81,52 @@ body {
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #94a3b8;
+  border-radius: var(--radius-sm);
+  background: var(--surface-inset);
+  color: var(--text-muted);
   flex-shrink: 0;
-  transition: all 0.15s ease;
+  transition: all var(--dur-fast) var(--ease-standard);
 }
 
 .mode-card:hover .mode-icon-wrapper {
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.12);
+  color: var(--mode-viewport);
+  background: var(--mode-viewport-soft);
 }
 
 .devtools-icon {
-  color: #a78bfa;
+  color: var(--mode-devtools);
 }
 
 .mode-card.highlight:hover .devtools-icon {
-  color: #c084fc;
-  background: rgba(168, 85, 247, 0.16);
+  color: var(--mode-devtools-hover);
+  background: var(--mode-devtools-soft);
 }
 
 .area-icon {
-  color: #34d399;
+  color: var(--mode-area);
 }
 
 .mode-card:hover .area-icon {
-  color: #6ee7b7;
-  background: rgba(52, 211, 153, 0.14);
+  color: var(--mode-area-hover);
+  background: var(--mode-area-soft);
 }
 
 .fullpage-icon {
-  color: #fbbf24;
+  color: var(--mode-fullpage);
 }
 
 .mode-card:hover .fullpage-icon {
-  color: #fcd34d;
-  background: rgba(251, 191, 36, 0.14);
+  color: var(--mode-fullpage-hover);
+  background: var(--mode-fullpage-soft);
 }
 
 .delayed-icon {
-  color: #f472b6;
+  color: var(--mode-delayed);
 }
 
 .mode-card:hover .delayed-icon {
-  color: #f9a8d4;
-  background: rgba(244, 114, 182, 0.14);
+  color: var(--mode-delayed-hover);
+  background: var(--mode-delayed-soft);
 }
 
 /* The delayed card is a container: its chips trigger the capture */
@@ -143,8 +135,8 @@ body {
 }
 
 .delayed-card:hover {
-  background: #1e293b;
-  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--surface-raised);
+  border-color: var(--border-subtle);
   transform: none;
 }
 
@@ -156,33 +148,28 @@ body {
 
 .delay-chip {
   font-family: inherit;
-  font-size: 10px;
-  font-weight: 600;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
   line-height: 1;
   padding: 5px 6px;
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
+  border-radius: var(--radius-xs);
+  background: var(--surface-inset);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.15s ease-in-out;
+  transition: all var(--dur-fast) var(--ease-standard);
 }
 
 .delay-chip:hover {
-  color: #f9a8d4;
-  border-color: rgba(244, 114, 182, 0.6);
-  background: rgba(244, 114, 182, 0.14);
-}
-
-.delay-chip:focus-visible {
-  outline: 2px solid rgba(56, 189, 248, 0.7);
-  outline-offset: 1px;
+  color: var(--mode-delayed-hover);
+  border-color: var(--mode-delayed-border);
+  background: var(--mode-delayed-soft);
 }
 
 .delay-chip.selected {
-  color: #0f172a;
-  background: #f472b6;
-  border-color: #f472b6;
+  color: var(--surface-app);
+  background: var(--mode-delayed);
+  border-color: var(--mode-delayed);
 }
 
 .mode-details {
@@ -191,37 +178,37 @@ body {
 }
 
 .mode-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #f1f5f9;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--text-strong);
   margin-bottom: 2px;
 }
 
 .mode-desc {
-  font-size: 11px;
-  color: #94a3b8;
-  line-height: 1.3;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: var(--leading-normal);
 }
 
 .shortcut-tag {
-  font-size: 10px;
-  font-weight: 500;
-  color: #64748b;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 4px;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-faint);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
   padding: 3px 5px;
   white-space: nowrap;
 }
 
 .mode-card:hover .shortcut-tag {
-  color: #94a3b8;
-  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--text-muted);
+  border-color: var(--border-strong);
 }
 
 .popup-footer {
   text-align: center;
-  font-size: 10.5px;
-  color: #64748b;
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
   padding-top: 2px;
 }
