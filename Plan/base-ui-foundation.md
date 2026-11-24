@@ -1,8 +1,8 @@
 # Base UI Foundation: 5-Day Plan
 
-Status: Day 1 code complete, Chrome check pending
+Status: Day 2 code complete, Chrome check pending
 Started: 2026-11-23
-Last updated: 2026-11-23
+Last updated: 2026-11-24
 
 One shared base layer (tokens, base styles, shared components) for `popup/` and `editor/`, so both surfaces stop carrying duplicated colors, buttons, chips, toggles and focus rules. No feature changes, no JS rewrite.
 
@@ -13,7 +13,7 @@ Main files: `styles/tokens.css` (new), `styles/base.css` (new), `styles/componen
 | Day | Focus | Status |
 | :--- | :--- | :--- |
 | 1 | Direction, tokens, base layer | Code complete, check pending |
-| 2 | Type and color correctness | Not started |
+| 2 | Type and color correctness | Code complete, check pending |
 | 3 | Shared components, part 1 | Not started |
 | 4 | Shared components, part 2, states | Not started |
 | 5 | Verification and audit | Not started |
@@ -32,10 +32,10 @@ Reasons:
 
 ### Decisions to confirm
 
-- [ ] **Keep per-mode icon hues in the popup** (violet, emerald, amber, pink) as functional wayfinding, exposed as `--mode-*` tokens, while all chrome uses one accent. Recommended, because the hues map to capture modes and speed up scanning. The core palette stays slate plus one blue accent; mode hues are functional status colors, not decoration.
-- [ ] **Font route**: self-host Plus Jakarta Sans in `fonts/` and drop the Google Fonts `<link>`. This removes a third-party render-blocking request and makes the README's "100% local" claim true. If the font files cannot be fetched, fall back to the system stack through `--font-family`; nothing else in the plan depends on the font.
+- [x] **Keep per-mode icon hues in the popup** (violet, emerald, amber, pink) as functional wayfinding, exposed as `--mode-*` tokens, while all chrome uses one accent. Recommended, because the hues map to capture modes and speed up scanning. The core palette stays slate plus one blue accent; mode hues are functional status colors, not decoration.
+- [x] **Font route**: self-host Plus Jakarta Sans in `fonts/` and drop the Google Fonts `<link>`. This removes a third-party render-blocking request and makes the README's "100% local" claim true. If the font files cannot be fetched, fall back to the system stack through `--font-family`; nothing else in the plan depends on the font.
 
-The mode hues are already exposed as `--mode-*` tokens in `styles/tokens.css`. The font route is still open and blocks Day 2.
+The mode hues remain tokenized as `--mode-*` and are used only on mode icons. The font is self-hosted at `fonts/PlusJakartaSans-Variable.woff2`, so no request leaves the extension.
 
 ## Why 5 days is not too much
 
@@ -58,12 +58,20 @@ Status: code complete on 2026-11-23. Visual parity still needs a load-unpacked c
 
 ## Day 2: Type and color correctness
 
-- [ ] Self-host Plus Jakarta Sans (400/500/600/700) in `fonts/`, add `@font-face` rules, remove the three Google Fonts links from `editor.html`
-- [ ] Point both surfaces at `--font-family`; the popup leaves its separate system stack
-- [ ] Replace popup hard-coded colors with tokens, keeping mode hues as `--mode-*`
-- [ ] Fix the contrast failures measured in `popup.css`: footer `#64748b` on `#0f172a` is about 3.7:1, which fails AA for 10.5px text, and `.shortcut-tag` is similar. Introduce `--text-faint` at a ratio of at least 4.5:1 and use it there
-- [ ] Delete the invalid `flex-direction: border-box;` declaration in `.popup-container`
+- [x] Self-host Plus Jakarta Sans (400/500/600/700) in `fonts/`, add `@font-face` rules, remove the three Google Fonts links from `editor.html`
+- [x] Point both surfaces at `--font-family`; the popup leaves its separate system stack
+- [x] Replace popup hard-coded colors with tokens, keeping mode hues as `--mode-*`
+- [x] Fix the contrast failures measured in `popup.css`: footer `#64748b` on `#0f172a` is about 3.7:1, which fails AA for 10.5px text, and `.shortcut-tag` is similar. Introduce `--text-faint` at a ratio of at least 4.5:1 and use it there
+- [x] Delete the invalid `flex-direction: border-box;` declaration in `.popup-container`
 - **Done when:** no hex values remain in `popup.css` outside the documented mode tokens, contrast ratios are recorded, and no request goes to fonts.googleapis.com.
+
+Recorded results:
+
+- Font: `fonts/PlusJakartaSans-Variable.woff2` (variable, weights 400 to 700), loaded through `@font-face` in `styles/base.css`.
+- Network: only the local font file loads; no request to `fonts.googleapis.com` or `fonts.gstatic.com`.
+- Footer: `--text-faint` `#8795ad` on `--surface-workspace` `#0f172a` is 5.89:1, AA pass for 10px text.
+- Shortcut tag: `--text-faint` `#8795ad` on `--surface-raised` `#1e293b` is 4.83:1, AA pass for 10px text.
+- `popup.css` contains no hex or rgba color literals, and the invalid `flex-direction: border-box` declaration is gone.
 
 ## Day 3: Shared components, part 1
 

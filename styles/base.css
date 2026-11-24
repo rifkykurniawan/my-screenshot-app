@@ -3,6 +3,14 @@
  * Loaded after tokens.css and before the surface stylesheet.
  */
 @layer base {
+  @font-face {
+    font-family: 'Plus Jakarta Sans';
+    font-style: normal;
+    font-weight: 400 700;
+    font-display: swap;
+    src: url('../fonts/PlusJakartaSans-Variable.woff2') format('woff2');
+  }
+
   * {
     margin: 0;
     padding: 0;
@@ -10,7 +18,7 @@
   }
 
   body {
-    font-family: var(--font-system);
+    font-family: var(--font-family);
   }
 
   :focus-visible {
