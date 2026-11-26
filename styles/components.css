@@ -1,0 +1,275 @@
+/*
+ * Screen Snap shared components.
+ * Primitives: button, card surface, chip, badge, keyboard key.
+ * Surface stylesheets keep layout; these rules own the visual states.
+ * Existing class names compose the base through :is(), so markup stays stable.
+ */
+@layer components {
+  /* Button */
+  :is(.btn, .btn-primary, .btn-secondary, .btn-icon) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    font-family: inherit;
+    font-size: var(--text-base);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition:
+      background-color var(--dur-fast) var(--ease-out),
+      border-color var(--dur-fast) var(--ease-out),
+      color var(--dur-fast) var(--ease-out),
+      box-shadow var(--dur-fast) var(--ease-out),
+      transform var(--dur-fast) var(--ease-out);
+  }
+
+  :is(.btn, .btn-primary, .btn-secondary, .btn-icon):disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  :is(.btn, .btn-primary, .btn-secondary, .btn-icon):focus-visible {
+    outline: var(--focus-ring-width) solid var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--blue-600) 0%, var(--blue-700) 100%);
+    color: var(--text-on-accent);
+    border-color: var(--border-strong);
+    padding: var(--space-2) var(--space-4);
+    box-shadow: var(--shadow-action);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--blue-500) 0%, var(--blue-600) 100%);
+    box-shadow: var(--shadow-action-hover);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .btn-secondary {
+    background: var(--surface-inset);
+    color: var(--text-main);
+    border-color: var(--border-subtle);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--surface-inset-strong);
+    border-color: var(--border-strong);
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .btn-icon {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    flex-shrink: 0;
+    gap: 0;
+    padding: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-muted);
+  }
+
+  .btn-icon:hover:not(:disabled) {
+    background: var(--surface-inset-hover);
+    color: var(--text-main);
+    border-color: var(--border-subtle);
+  }
+
+  .btn-icon:active:not(:disabled) {
+    background: var(--surface-inset-strong);
+    color: var(--text-main);
+  }
+
+  .btn-icon.btn-danger-hover:hover:not(:disabled) {
+    background: var(--danger-soft);
+    color: var(--danger-text);
+    border-color: var(--danger-border);
+  }
+
+  /* Card surface */
+  :is(.mode-card) {
+    background: var(--surface-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: inherit;
+    transition:
+      background-color var(--dur-fast) var(--ease-standard),
+      border-color var(--dur-fast) var(--ease-standard),
+      transform var(--dur-fast) var(--ease-standard);
+  }
+
+  :is(.mode-card):hover {
+    background: var(--surface-raised-hover);
+    border-color: var(--border-action);
+    transform: translateY(-1px);
+  }
+
+  :is(.mode-card):active {
+    transform: translateY(0);
+  }
+
+  :is(.mode-card):focus-visible {
+    outline: var(--focus-ring-width) solid var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  /* Chip */
+  :is(.chip, .delay-chip, .token-chip, .shortcut-tag) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    font-family: inherit;
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    line-height: 1;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xs);
+    background: var(--surface-inset);
+    color: var(--text-muted);
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color var(--dur-fast) var(--ease-standard),
+      border-color var(--dur-fast) var(--ease-standard),
+      color var(--dur-fast) var(--ease-standard);
+  }
+
+  :is(.chip, .delay-chip, .token-chip, .shortcut-tag):focus-visible {
+    outline: var(--focus-ring-width) solid var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  :is(.chip, .delay-chip, .token-chip, .shortcut-tag):disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .delay-chip {
+    padding: 5px 6px;
+  }
+
+  .delay-chip:hover {
+    color: var(--mode-delayed-hover);
+    border-color: var(--mode-delayed-border);
+    background: var(--mode-delayed-soft);
+  }
+
+  .delay-chip.selected {
+    color: var(--surface-app);
+    background: var(--mode-delayed);
+    border-color: var(--mode-delayed);
+  }
+
+  .token-chip {
+    padding: 3px 7px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: var(--text-xs);
+    background: var(--accent-action-soft);
+    border-color: var(--accent-action-border);
+    color: var(--text-main);
+  }
+
+  .token-chip:hover {
+    background: var(--accent-action-soft-hover);
+    border-color: var(--accent-action-border-hover);
+  }
+
+  .shortcut-tag {
+    padding: 3px 5px;
+    font-weight: var(--weight-medium);
+    background: transparent;
+    color: var(--text-faint);
+  }
+
+  /* Badge */
+  :is(.badge, .badge-dimension, .crop-badge, .opacity-badge, .intensity-badge) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: 1;
+    border-radius: var(--radius-xs);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .badge {
+    padding: 2px 6px;
+    font-size: var(--text-2xs);
+    background: var(--accent-soft);
+    color: var(--accent-brand);
+  }
+
+  .badge-dimension {
+    padding: 3px 8px;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    background: var(--surface-inset);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+  }
+
+  .crop-badge {
+    padding: 2px 6px;
+    background: var(--accent-action-soft);
+    color: var(--text-main);
+  }
+
+  .opacity-badge,
+  .intensity-badge {
+    justify-content: flex-end;
+    color: var(--text-main);
+    font-size: var(--text-sm);
+  }
+
+  .opacity-badge {
+    min-width: 28px;
+  }
+
+  .intensity-badge {
+    min-width: 14px;
+  }
+
+  /* Keyboard key */
+  :is(.kbd, .kbd-hint, .kbd-mini) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: var(--radius-xs);
+    background: var(--surface-keycap);
+    border: 1px solid var(--border-keycap);
+    color: var(--text-keycap);
+    white-space: nowrap;
+  }
+
+  .kbd-mini {
+    padding: 1px 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-weight: var(--weight-bold);
+  }
+}

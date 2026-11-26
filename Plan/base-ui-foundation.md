@@ -1,8 +1,8 @@
 # Base UI Foundation: 5-Day Plan
 
-Status: Day 2 code complete, Chrome check pending
+Status: Day 3 code complete, Chrome check pending
 Started: 2026-11-23
-Last updated: 2026-11-24
+Last updated: 2026-11-26
 
 One shared base layer (tokens, base styles, shared components) for `popup/` and `editor/`, so both surfaces stop carrying duplicated colors, buttons, chips, toggles and focus rules. No feature changes, no JS rewrite.
 
@@ -14,7 +14,7 @@ Main files: `styles/tokens.css` (new), `styles/base.css` (new), `styles/componen
 | :--- | :--- | :--- |
 | 1 | Direction, tokens, base layer | Code complete, check pending |
 | 2 | Type and color correctness | Code complete, check pending |
-| 3 | Shared components, part 1 | Not started |
+| 3 | Shared components, part 1 | Code complete, check pending |
 | 4 | Shared components, part 2, states | Not started |
 | 5 | Verification and audit | Not started |
 
@@ -75,13 +75,27 @@ Recorded results:
 
 ## Day 3: Shared components, part 1
 
-- [ ] `styles/components.css`: `.btn` base with `--primary`, `--secondary`, `--icon` and `--danger` modifiers, covering hover, active, disabled and focus-visible
-- [ ] Migrate editor `.btn-primary`, `.btn-secondary` and `.btn-icon` to compose `.btn`, using `:is()` selectors so the markup and class names stay as they are
-- [ ] Popup `.mode-card` keeps its layout but takes border, radius, surface, hover and focus from component tokens
-- [ ] `.chip` primitive for `.delay-chip`, `.token-chip` and `.shortcut-tag`, with size modifiers
-- [ ] `.badge` primitive for `.badge`, `.badge-dimension`, `.crop-badge`, `.opacity-badge` and `.intensity-badge`
-- [ ] `.kbd` primitive for `.kbd-hint` and `.kbd-mini`
+- [x] `styles/components.css`: `.btn` base with `--primary`, `--secondary`, `--icon` and `--danger` modifiers, covering hover, active, disabled and focus-visible
+- [x] Migrate editor `.btn-primary`, `.btn-secondary` and `.btn-icon` to compose `.btn`, using `:is()` selectors so the markup and class names stay as they are
+- [x] Popup `.mode-card` keeps its layout but takes border, radius, surface, hover and focus from component tokens
+- [x] `.chip` primitive for `.delay-chip`, `.token-chip` and `.shortcut-tag`, with size modifiers
+- [x] `.badge` primitive for `.badge`, `.badge-dimension`, `.crop-badge`, `.opacity-badge` and `.intensity-badge`
+- [x] `.kbd` primitive for `.kbd-hint` and `.kbd-mini`
 - **Done when:** each primitive has one definition, all four interaction states are visible and consistent, and `popup.js` and `editor.js` are untouched.
+
+Recorded results:
+
+- `styles/components.css` is linked after `styles/base.css` and before `popup.css` and `editor.css`.
+- Buttons share one base through `:is(.btn, .btn-primary, .btn-secondary, .btn-icon)`. Primary, secondary and icon modifiers cover hover, active, disabled and focus-visible.
+- Mode card surface, hover, active and focus moved to the component layer; popup keeps layout and mode-specific icon colors.
+- Chip, badge and kbd bases are defined once; surface stylesheets keep layout only.
+- Removed the unlayered global reset from `editor.css` so the shared base reset and component layer can apply without stripping component padding.
+- Verified computed styles: Save is 8px 12px padding with a 35px height; Copy is 8px 16px with a 35px height; icon buttons stay 30px square; chips keep their 4px radius; keyboard keys use the dark keycap tokens.
+- Badge text uses `--text-main` for crop and value badges so small labels keep AA contrast on tinted surfaces.
+- Verified states: mode card hover changes surface and border; delay chip hover uses the delayed-mode hue; token chip hover strengthens its blue surface; disabled icon button stays at 0.5 opacity with no hover change; focus ring is a 2px blue outline.
+- Popup checked at 320px; editor checked at 600px and 400px with no page overflow.
+- Coarse pointer controls keep a 44px minimum target, including icon-only Save and Copy.
+- `popup.js` and `editor.js` were not edited.
 
 ## Day 4: Shared components, part 2, and states
 
