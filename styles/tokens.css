@@ -18,6 +18,7 @@
     --slate-100: #f1f5f9;
     --slate-50: #f8fafc;
 
+    --blue-300: #93c5fd;
     --blue-500: #3b82f6;
     --blue-600: #2563eb;
     --blue-700: #1d4ed8;
@@ -43,6 +44,7 @@
     --surface-app: var(--slate-950);
     --surface-workspace: var(--slate-900);
     --surface-panel: rgba(19, 26, 42, 0.85);
+    --surface-popover: #131a2a;
     --surface-raised: var(--slate-800);
     --surface-raised-hover: var(--slate-750);
     --surface-inset: rgba(255, 255, 255, 0.05);
@@ -51,6 +53,9 @@
     --surface-keycap: rgba(0, 0, 0, 0.28);
     --border-keycap: rgba(255, 255, 255, 0.2);
     --text-keycap: rgba(255, 255, 255, 0.9);
+    --switch-track: rgba(255, 255, 255, 0.2);
+    --slider-track: rgba(255, 255, 255, 0.18);
+    --slider-track-hover: rgba(255, 255, 255, 0.28);
 
     --border-subtle: rgba(255, 255, 255, 0.08);
     --border-strong: rgba(255, 255, 255, 0.18);

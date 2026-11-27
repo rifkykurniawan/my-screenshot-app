@@ -1,8 +1,8 @@
 # Base UI Foundation: 5-Day Plan
 
-Status: Day 3 code complete, Chrome check pending
+Status: Day 4 code complete, Chrome check pending
 Started: 2026-11-23
-Last updated: 2026-11-26
+Last updated: 2026-11-27
 
 One shared base layer (tokens, base styles, shared components) for `popup/` and `editor/`, so both surfaces stop carrying duplicated colors, buttons, chips, toggles and focus rules. No feature changes, no JS rewrite.
 
@@ -15,7 +15,7 @@ Main files: `styles/tokens.css` (new), `styles/base.css` (new), `styles/componen
 | 1 | Direction, tokens, base layer | Code complete, check pending |
 | 2 | Type and color correctness | Code complete, check pending |
 | 3 | Shared components, part 1 | Code complete, check pending |
-| 4 | Shared components, part 2, states | Not started |
+| 4 | Shared components, part 2, states | Code complete, check pending |
 | 5 | Verification and audit | Not started |
 
 Update the Status cell to In progress or Done as you go. The checkboxes in each day are the detailed log.
@@ -99,15 +99,28 @@ Recorded results:
 
 ## Day 4: Shared components, part 2, and states
 
-- [ ] Merge the two toggle implementations (`.toggle-slider`, `.beautify-switch-slider`) into one `.switch`
-- [ ] Merge the two segmented controls (`.mode-btn`, `.beautify-segment`) into one `.segmented`
-- [ ] Unify `.format-select`, `.template-input` and the range sliders under `.field` and `.slider`, built from tokens
-- [ ] Unify popover chrome (`.export-settings-panel`, `.watermark-panel`, `.tool-tooltip`) into `.panel`
-- [ ] Add the missing UI states in the base layer:
+- [x] Merge the two toggle implementations (`.toggle-slider`, `.beautify-switch-slider`) into one `.switch`
+- [x] Merge the two segmented controls (`.mode-btn`, `.beautify-segment`) into one `.segmented`
+- [x] Unify `.format-select`, `.template-input` and the range sliders under `.field` and `.slider`, built from tokens
+- [x] Unify popover chrome (`.export-settings-panel`, `.watermark-panel`, `.tool-tooltip`) into `.panel`
+- [x] Add the missing UI states in the base layer:
   - disabled controls share one style
   - pending button style for Save and Copy, so a second click is blocked and work is visible
   - editor image load error state that replaces the permanent "Loading..." badge text
 - **Done when:** each merged primitive renders the same in both places, keyboard focus order is unchanged, and the pending and error states are reachable.
+
+Recorded results (headless Chromium 1248 against `python3 -m http.server`):
+
+- Switch: `.toggle-control`, `.beautify-switch` share one `.switch` base. Clicking the URL Bar label sets `checked`, track `rgb(59, 130, 246)`, thumb `translateX(12px)`, track 28x16 at `999px` radius. Hidden input stays keyboard-focusable with the 2px focus ring on the track.
+- Segmented: `.beautify-segment` and `.redact-mode-toggle` both report 2px padding, 2px gap, 8px wrapper radius, 6px button radius. Active state uses `--accent-action-soft` `rgba(59, 130, 246, 0.14)` plus `--accent-action-border` `rgba(59, 130, 246, 0.32)`; inactive buttons stay transparent with `--text-muted`.
+- Fields: `.format-select` keeps its inline SVG arrow through `background-image`, `background-position: calc(100% - 9px) 50%`, `no-repeat`, and 26px right padding; radius 8px. `.template-input` keeps the monospace stack and `user-select: text`. Both share `7px 10px` padding and the hover/focus-visible border.
+- Sliders: all four inputs (`.quality-slider`, `#beautify-padding`, `#opacity-slider`, `#blur-intensity-slider`) resolve to the shared 18px host height, 5px track and 14px blue thumb; visible in the panel and rail captures.
+- Panel: `.export-settings-panel` renders `--surface-popover` `#131a2a`, border `rgba(255, 255, 255, 0.18)`, `--radius-lg` 12px, `--shadow-panel` `0 18px 40px rgba(0, 0, 0, 0.55)`.
+- Pending: forcing `.is-pending` + `disabled` on Copy yields opacity 0.75, `cursor: progress`, `aria-busy="true"`, then clears back. Removed the unlayered `.app-header button:disabled { cursor: not-allowed }` duplicate in `editor.css` that was silently overriding the pending cursor.
+- Error: `.badge-dimension.is-error` renders `--danger-text` `rgb(252, 165, 165)` on `--danger-soft` `rgba(239, 68, 68, 0.18)` with `--danger-border` `rgba(239, 68, 68, 0.4)`; `editor.js` sets the text to "Image failed to load" only when `imageLoadError` is true.
+- Popup at 320px: `scrollWidth` equals `clientWidth` (320), mode card radius 8px, delay chip radius 4px, so Day 4 did not regress the popup.
+- Console: no application errors; the only logged error is the local server's `favicon.ico` 404.
+- Still pending for Day 5: the load-unpacked Chrome pass, full keyboard order, and the audit file.
 
 ## Day 5: Verification and audit
 
