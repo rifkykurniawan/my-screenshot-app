@@ -18,8 +18,10 @@
     --slate-100: #f1f5f9;
     --slate-50: #f8fafc;
 
+    --blue-300: #93c5fd;
     --blue-500: #3b82f6;
     --blue-600: #2563eb;
+    --blue-700: #1d4ed8;
     --sky-400: #38bdf8;
 
     --emerald-500: #10b981;
@@ -36,14 +38,24 @@
     --pink-300: #f9a8d4;
 
     --red-500: #ef4444;
+    --red-300: #fca5a5;
 
     /* Surfaces and borders */
     --surface-app: var(--slate-950);
     --surface-workspace: var(--slate-900);
     --surface-panel: rgba(19, 26, 42, 0.85);
+    --surface-popover: #131a2a;
     --surface-raised: var(--slate-800);
     --surface-raised-hover: var(--slate-750);
     --surface-inset: rgba(255, 255, 255, 0.05);
+    --surface-inset-hover: rgba(255, 255, 255, 0.08);
+    --surface-inset-strong: rgba(255, 255, 255, 0.12);
+    --surface-keycap: rgba(0, 0, 0, 0.28);
+    --border-keycap: rgba(255, 255, 255, 0.2);
+    --text-keycap: rgba(255, 255, 255, 0.9);
+    --switch-track: rgba(255, 255, 255, 0.2);
+    --slider-track: rgba(255, 255, 255, 0.18);
+    --slider-track-hover: rgba(255, 255, 255, 0.28);
 
     --border-subtle: rgba(255, 255, 255, 0.08);
     --border-strong: rgba(255, 255, 255, 0.18);
@@ -62,8 +74,15 @@
     --accent-hover: var(--blue-600);
     --accent-brand: var(--sky-400);
     --accent-soft: rgba(56, 189, 248, 0.15);
+    --accent-action-soft: rgba(59, 130, 246, 0.14);
+    --accent-action-soft-hover: rgba(59, 130, 246, 0.28);
+    --accent-action-border: rgba(59, 130, 246, 0.32);
+    --accent-action-border-hover: rgba(59, 130, 246, 0.55);
     --success: var(--emerald-500);
     --danger: var(--red-500);
+    --danger-soft: rgba(239, 68, 68, 0.18);
+    --danger-border: rgba(239, 68, 68, 0.4);
+    --danger-text: var(--red-300);
 
     /* Capture mode hues: functional wayfinding, not decoration. */
     --mode-viewport: var(--sky-400);

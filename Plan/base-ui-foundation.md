@@ -1,8 +1,8 @@
 # Base UI Foundation: 5-Day Plan
 
-Status: Day 2 code complete, Chrome check pending
+Status: Day 4 code complete, Chrome check pending
 Started: 2026-11-23
-Last updated: 2026-11-24
+Last updated: 2026-11-27
 
 One shared base layer (tokens, base styles, shared components) for `popup/` and `editor/`, so both surfaces stop carrying duplicated colors, buttons, chips, toggles and focus rules. No feature changes, no JS rewrite.
 
@@ -14,8 +14,8 @@ Main files: `styles/tokens.css` (new), `styles/base.css` (new), `styles/componen
 | :--- | :--- | :--- |
 | 1 | Direction, tokens, base layer | Code complete, check pending |
 | 2 | Type and color correctness | Code complete, check pending |
-| 3 | Shared components, part 1 | Not started |
-| 4 | Shared components, part 2, states | Not started |
+| 3 | Shared components, part 1 | Code complete, check pending |
+| 4 | Shared components, part 2, states | Code complete, check pending |
 | 5 | Verification and audit | Not started |
 
 Update the Status cell to In progress or Done as you go. The checkboxes in each day are the detailed log.
@@ -75,25 +75,52 @@ Recorded results:
 
 ## Day 3: Shared components, part 1
 
-- [ ] `styles/components.css`: `.btn` base with `--primary`, `--secondary`, `--icon` and `--danger` modifiers, covering hover, active, disabled and focus-visible
-- [ ] Migrate editor `.btn-primary`, `.btn-secondary` and `.btn-icon` to compose `.btn`, using `:is()` selectors so the markup and class names stay as they are
-- [ ] Popup `.mode-card` keeps its layout but takes border, radius, surface, hover and focus from component tokens
-- [ ] `.chip` primitive for `.delay-chip`, `.token-chip` and `.shortcut-tag`, with size modifiers
-- [ ] `.badge` primitive for `.badge`, `.badge-dimension`, `.crop-badge`, `.opacity-badge` and `.intensity-badge`
-- [ ] `.kbd` primitive for `.kbd-hint` and `.kbd-mini`
+- [x] `styles/components.css`: `.btn` base with `--primary`, `--secondary`, `--icon` and `--danger` modifiers, covering hover, active, disabled and focus-visible
+- [x] Migrate editor `.btn-primary`, `.btn-secondary` and `.btn-icon` to compose `.btn`, using `:is()` selectors so the markup and class names stay as they are
+- [x] Popup `.mode-card` keeps its layout but takes border, radius, surface, hover and focus from component tokens
+- [x] `.chip` primitive for `.delay-chip`, `.token-chip` and `.shortcut-tag`, with size modifiers
+- [x] `.badge` primitive for `.badge`, `.badge-dimension`, `.crop-badge`, `.opacity-badge` and `.intensity-badge`
+- [x] `.kbd` primitive for `.kbd-hint` and `.kbd-mini`
 - **Done when:** each primitive has one definition, all four interaction states are visible and consistent, and `popup.js` and `editor.js` are untouched.
+
+Recorded results:
+
+- `styles/components.css` is linked after `styles/base.css` and before `popup.css` and `editor.css`.
+- Buttons share one base through `:is(.btn, .btn-primary, .btn-secondary, .btn-icon)`. Primary, secondary and icon modifiers cover hover, active, disabled and focus-visible.
+- Mode card surface, hover, active and focus moved to the component layer; popup keeps layout and mode-specific icon colors.
+- Chip, badge and kbd bases are defined once; surface stylesheets keep layout only.
+- Removed the unlayered global reset from `editor.css` so the shared base reset and component layer can apply without stripping component padding.
+- Verified computed styles: Save is 8px 12px padding with a 35px height; Copy is 8px 16px with a 35px height; icon buttons stay 30px square; chips keep their 4px radius; keyboard keys use the dark keycap tokens.
+- Badge text uses `--text-main` for crop and value badges so small labels keep AA contrast on tinted surfaces.
+- Verified states: mode card hover changes surface and border; delay chip hover uses the delayed-mode hue; token chip hover strengthens its blue surface; disabled icon button stays at 0.5 opacity with no hover change; focus ring is a 2px blue outline.
+- Popup checked at 320px; editor checked at 600px and 400px with no page overflow.
+- Coarse pointer controls keep a 44px minimum target, including icon-only Save and Copy.
+- `popup.js` and `editor.js` were not edited.
 
 ## Day 4: Shared components, part 2, and states
 
-- [ ] Merge the two toggle implementations (`.toggle-slider`, `.beautify-switch-slider`) into one `.switch`
-- [ ] Merge the two segmented controls (`.mode-btn`, `.beautify-segment`) into one `.segmented`
-- [ ] Unify `.format-select`, `.template-input` and the range sliders under `.field` and `.slider`, built from tokens
-- [ ] Unify popover chrome (`.export-settings-panel`, `.watermark-panel`, `.tool-tooltip`) into `.panel`
-- [ ] Add the missing UI states in the base layer:
+- [x] Merge the two toggle implementations (`.toggle-slider`, `.beautify-switch-slider`) into one `.switch`
+- [x] Merge the two segmented controls (`.mode-btn`, `.beautify-segment`) into one `.segmented`
+- [x] Unify `.format-select`, `.template-input` and the range sliders under `.field` and `.slider`, built from tokens
+- [x] Unify popover chrome (`.export-settings-panel`, `.watermark-panel`, `.tool-tooltip`) into `.panel`
+- [x] Add the missing UI states in the base layer:
   - disabled controls share one style
   - pending button style for Save and Copy, so a second click is blocked and work is visible
   - editor image load error state that replaces the permanent "Loading..." badge text
 - **Done when:** each merged primitive renders the same in both places, keyboard focus order is unchanged, and the pending and error states are reachable.
+
+Recorded results (headless Chromium 1248 against `python3 -m http.server`):
+
+- Switch: `.toggle-control`, `.beautify-switch` share one `.switch` base. Clicking the URL Bar label sets `checked`, track `rgb(59, 130, 246)`, thumb `translateX(12px)`, track 28x16 at `999px` radius. Hidden input stays keyboard-focusable with the 2px focus ring on the track.
+- Segmented: `.beautify-segment` and `.redact-mode-toggle` both report 2px padding, 2px gap, 8px wrapper radius, 6px button radius. Active state uses `--accent-action-soft` `rgba(59, 130, 246, 0.14)` plus `--accent-action-border` `rgba(59, 130, 246, 0.32)`; inactive buttons stay transparent with `--text-muted`.
+- Fields: `.format-select` keeps its inline SVG arrow through `background-image`, `background-position: calc(100% - 9px) 50%`, `no-repeat`, and 26px right padding; radius 8px. `.template-input` keeps the monospace stack and `user-select: text`. Both share `7px 10px` padding and the hover/focus-visible border.
+- Sliders: all four inputs (`.quality-slider`, `#beautify-padding`, `#opacity-slider`, `#blur-intensity-slider`) resolve to the shared 18px host height, 5px track and 14px blue thumb; visible in the panel and rail captures.
+- Panel: `.export-settings-panel` renders `--surface-popover` `#131a2a`, border `rgba(255, 255, 255, 0.18)`, `--radius-lg` 12px, `--shadow-panel` `0 18px 40px rgba(0, 0, 0, 0.55)`.
+- Pending: forcing `.is-pending` + `disabled` on Copy yields opacity 0.75, `cursor: progress`, `aria-busy="true"`, then clears back. Removed the unlayered `.app-header button:disabled { cursor: not-allowed }` duplicate in `editor.css` that was silently overriding the pending cursor.
+- Error: `.badge-dimension.is-error` renders `--danger-text` `rgb(252, 165, 165)` on `--danger-soft` `rgba(239, 68, 68, 0.18)` with `--danger-border` `rgba(239, 68, 68, 0.4)`; `editor.js` sets the text to "Image failed to load" only when `imageLoadError` is true.
+- Popup at 320px: `scrollWidth` equals `clientWidth` (320), mode card radius 8px, delay chip radius 4px, so Day 4 did not regress the popup.
+- Console: no application errors; the only logged error is the local server's `favicon.ico` 404.
+- Still pending for Day 5: the load-unpacked Chrome pass, full keyboard order, and the audit file.
 
 ## Day 5: Verification and audit
 

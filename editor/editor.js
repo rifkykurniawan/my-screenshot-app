@@ -229,6 +229,7 @@
   let sourceTitle = 'Screenshot';
   let capturedAt = Date.now();
   let baseImage = null; // HTMLImageElement or Canvas fallback
+  let imageLoadError = false;
 
   // Shape-based History (preserves quality and enables seamless URL bar toggling)
   const MAX_HISTORY = 40;
@@ -309,6 +310,7 @@
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
+      imageLoadError = false;
       baseImage = img;
       if (undoStack.length === 1 && !undoStack[0].baseImage) {
         undoStack[0].baseImage = baseImage;
@@ -318,6 +320,7 @@
     };
     img.onerror = () => {
       console.error('Failed to load screenshot image.');
+      imageLoadError = true;
       createPlaceholderImage();
     };
     img.src = src;
@@ -428,7 +431,13 @@
     syncCanvasDisplaySize();
 
     // Update Dimensions Badge
-    dimensionsBadge.textContent = `${canvas.width} × ${canvas.height} px`;
+    if (imageLoadError) {
+      dimensionsBadge.textContent = 'Image failed to load';
+      dimensionsBadge.classList.add('is-error');
+    } else {
+      dimensionsBadge.textContent = `${canvas.width} × ${canvas.height} px`;
+      dimensionsBadge.classList.remove('is-error');
+    }
 
     // First paint: fit the screenshot inside the workspace
     if (needsInitialFit) {
@@ -3532,6 +3541,8 @@
     render();
 
     btnCopy.disabled = true;
+    btnCopy.classList.add('is-pending');
+    btnCopy.setAttribute('aria-busy', 'true');
     btnCopy.innerHTML = `
       <svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
@@ -3567,6 +3578,8 @@
       console.error('Clipboard copy error:', err);
       showToast('Copy Failed', 'Please grant clipboard permissions or click inside tab.');
       btnCopy.disabled = false;
+      btnCopy.classList.remove('is-pending');
+      btnCopy.removeAttribute('aria-busy');
       if (prevSelected >= 0) {
         selectedShapeIndex = prevSelected;
       }
@@ -4254,6 +4267,8 @@
 
     const originalMarkup = btnSave.innerHTML;
     btnSave.disabled = true;
+    btnSave.classList.add('is-pending');
+    btnSave.setAttribute('aria-busy', 'true');
     btnSave.innerHTML = `
       <svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
@@ -4294,6 +4309,8 @@
       hoveredEraserIndex = prevEraserHover;
       render();
       btnSave.disabled = false;
+      btnSave.classList.remove('is-pending');
+      btnSave.removeAttribute('aria-busy');
       btnSave.innerHTML = originalMarkup;
     }
   }

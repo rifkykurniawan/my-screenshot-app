@@ -48,6 +48,10 @@
     cursor: not-allowed;
   }
 
+  :is(button, input, select, textarea):disabled {
+    opacity: 0.5;
+  }
+
   /* Motion is state feedback only, so it stops when the user asks it to. */
   @media (prefers-reduced-motion: reduce) {
     *,
